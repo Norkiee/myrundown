@@ -19,7 +19,14 @@ export default function ReadsPage() {
   const [todayLoading, setTodayLoading] = useState(false);
 
   const loadProfile = useCallback(async () => {
-    const res = await fetch("/api/profile");
+    let res = await fetch("/api/profile");
+
+    // If profile doesn't exist (500 error), try to create it
+    if (!res.ok) {
+      await fetch("/api/auth/ensure-profile", { method: "POST" });
+      res = await fetch("/api/profile");
+    }
+
     if (res.ok) {
       const data = await res.json();
       setProfile(data);

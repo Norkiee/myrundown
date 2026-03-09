@@ -75,18 +75,12 @@ function AuthCallbackHandler() {
       const { data: { user } } = await supabase.auth.getUser();
 
       if (user) {
-        // Check if profile exists, create if not
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("id")
-          .eq("id", user.id)
-          .single();
+        // Ensure profile exists (calls server-side API that can bypass RLS)
+        const profileRes = await fetch("/api/auth/ensure-profile", { method: "POST" });
+        const profileData = await profileRes.json();
 
-        if (!profile) {
-          // New user - create profile
-          await supabase
-            .from("profiles")
-            .insert({ id: user.id, email: user.email });
+        if (profileData.created) {
+          // New user - go to onboarding
           router.push("/onboarding");
           return;
         }
