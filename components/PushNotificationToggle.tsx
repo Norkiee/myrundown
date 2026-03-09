@@ -57,7 +57,7 @@ export function PushNotificationToggle() {
 
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidKey),
+        applicationServerKey: urlBase64ToUint8Array(vapidKey) as BufferSource,
       });
 
       const res = await fetch("/api/push/subscribe", {
@@ -137,7 +137,7 @@ export function PushNotificationToggle() {
   );
 }
 
-function urlBase64ToUint8Array(base64String: string): Uint8Array {
+function urlBase64ToUint8Array(base64String: string) {
   // Trim and clean the string
   const cleaned = base64String.trim();
 
