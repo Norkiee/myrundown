@@ -43,6 +43,13 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname.startsWith("/login") ||
     request.nextUrl.pathname.startsWith("/signup");
 
+  const isCallbackRoute = request.nextUrl.pathname.startsWith("/auth/callback");
+
+  // Don't interfere with auth callback - let it handle its own redirects
+  if (isCallbackRoute) {
+    return supabaseResponse;
+  }
+
   if (isProtectedRoute && !user) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";

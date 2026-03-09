@@ -8,13 +8,22 @@ export async function GET(request: Request) {
   const token_hash = searchParams.get("token_hash");
   const type = searchParams.get("type");
 
+  // Debug logging
+  console.log("Auth callback params:", {
+    code: code ? "present" : "missing",
+    token_hash: token_hash ? "present" : "missing",
+    type,
+    fullUrl: request.url,
+  });
+
   const supabase = await createClient();
-  let authError = null;
+  let authError: Error | null = null;
 
   // Handle PKCE flow (code parameter)
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     authError = error;
+    if (error) console.log("PKCE exchange error:", error.message);
   }
   // Handle token hash flow (magic link email confirmation)
   else if (token_hash && type) {
@@ -23,6 +32,9 @@ export async function GET(request: Request) {
       type: type as "email" | "magiclink",
     });
     authError = error;
+    if (error) console.log("Token hash verify error:", error.message);
+  } else {
+    console.log("No code or token_hash found in callback");
   }
 
   if (!authError && (code || token_hash)) {
