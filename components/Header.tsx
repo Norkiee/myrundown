@@ -16,52 +16,13 @@ export function Header({ profile, onProfileUpdate }: HeaderProps) {
     <>
       <header className="flex items-center justify-between py-4 mb-6">
         <div className="flex items-center gap-2 group cursor-default">
-          <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            className="text-text-primary transition-transform duration-300 group-hover:scale-110"
-          >
-            <rect
-              x="3"
-              y="3"
-              width="18"
-              height="18"
-              rx="4"
-              stroke="currentColor"
-              strokeWidth="1.5"
-            />
-            <line
-              x1="7"
-              y1="8"
-              x2="17"
-              y2="8"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              className="origin-left transition-transform duration-300 group-hover:scale-x-90"
-            />
-            <line
-              x1="7"
-              y1="12"
-              x2="17"
-              y2="12"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-            />
-            <line
-              x1="7"
-              y1="16"
-              x2="13"
-              y2="16"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              className="origin-left transition-transform duration-300 group-hover:scale-x-110"
-            />
-          </svg>
+          <img
+            src="/icon.svg"
+            alt="My Rundown"
+            width={24}
+            height={24}
+            className="transition-transform duration-300 group-hover:scale-110"
+          />
           <span className="font-semibold text-text-primary">My Rundown</span>
         </div>
 

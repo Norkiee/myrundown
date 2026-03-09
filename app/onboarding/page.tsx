@@ -74,26 +74,7 @@ export default function OnboardingPage() {
       <div className="w-full max-w-lg animate-fade-up">
         {/* Logo */}
         <div className="flex items-center justify-center gap-2 mb-8">
-          <svg
-            width="28"
-            height="28"
-            viewBox="0 0 24 24"
-            fill="none"
-            className="text-text-primary"
-          >
-            <rect
-              x="3"
-              y="3"
-              width="18"
-              height="18"
-              rx="4"
-              stroke="currentColor"
-              strokeWidth="1.5"
-            />
-            <line x1="7" y1="8" x2="17" y2="8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            <line x1="7" y1="12" x2="17" y2="12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            <line x1="7" y1="16" x2="13" y2="16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
+          <img src="/icon.svg" alt="My Rundown" width={28} height={28} />
           <span className="text-xl font-semibold text-text-primary">My Rundown</span>
         </div>
 
