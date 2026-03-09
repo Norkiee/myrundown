@@ -146,12 +146,10 @@ export default function ReadsPage() {
 
   return (
     <div className="pb-20 animate-fade-in">
-      {profile && (
-        <Header
-          profile={profile}
-          onProfileUpdate={setProfile}
-        />
-      )}
+      <Header
+        profile={profile}
+        onProfileUpdate={setProfile}
+      />
 
       <TabNav
         activeTab={activeTab}

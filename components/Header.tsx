@@ -5,7 +5,7 @@ import { SettingsPanel } from "./SettingsPanel";
 import type { Profile } from "@/lib/types";
 
 interface HeaderProps {
-  profile: Profile;
+  profile: Profile | null;
   onProfileUpdate: (profile: Profile) => void;
 }
 
@@ -27,12 +27,13 @@ export function Header({ profile, onProfileUpdate }: HeaderProps) {
         </div>
 
         <button
-          onClick={() => setShowSettings(!showSettings)}
+          onClick={() => profile && setShowSettings(!showSettings)}
+          disabled={!profile}
           className={`p-2 rounded-lg transition-all duration-200 btn-press ${
             showSettings
               ? "bg-surface text-text-primary"
               : "hover:bg-surface text-text-muted hover:text-text-secondary"
-          }`}
+          } ${!profile ? "opacity-50 cursor-not-allowed" : ""}`}
           aria-label="Settings"
         >
           <svg
@@ -52,7 +53,7 @@ export function Header({ profile, onProfileUpdate }: HeaderProps) {
         </button>
       </header>
 
-      {showSettings && (
+      {showSettings && profile && (
         <div className="animate-scale-in">
           <SettingsPanel
             profile={profile}
