@@ -51,7 +51,7 @@ export default function LoginPage() {
               />
             </svg>
             <h1 className="text-xl font-semibold text-text-primary">
-              Daily Reads
+              My Rundown
             </h1>
           </div>
           <p className="text-text-muted text-sm">Sign in or create an account</p>

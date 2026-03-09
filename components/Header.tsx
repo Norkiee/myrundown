@@ -62,7 +62,7 @@ export function Header({ profile, onProfileUpdate }: HeaderProps) {
               className="origin-left transition-transform duration-300 group-hover:scale-x-110"
             />
           </svg>
-          <span className="font-semibold text-text-primary">Daily Reads</span>
+          <span className="font-semibold text-text-primary">My Rundown</span>
         </div>
 
         <button

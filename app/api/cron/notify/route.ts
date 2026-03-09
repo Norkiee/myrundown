@@ -71,7 +71,7 @@ export async function GET(request: Request) {
 
       const emailHtml = `
         <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h1 style="color: #333;">Your Daily Reads</h1>
+          <h1 style="color: #333;">Your Rundown</h1>
           <p style="color: #666;">Here are today's curated articles for you:</p>
           ${articles.map((a: { title: string; url: string; source: string; summary: string }) => `
             <div style="margin: 20px 0; padding: 16px; border: 1px solid #eee; border-radius: 8px;">
@@ -95,9 +95,9 @@ export async function GET(request: Request) {
           Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
         },
         body: JSON.stringify({
-          from: process.env.RESEND_FROM_EMAIL || "Daily Reads <noreply@dailyreads.app>",
+          from: process.env.RESEND_FROM_EMAIL || "My Rundown <noreply@dailyreads.app>",
           to: profile.email,
-          subject: "Your Daily Reads are ready",
+          subject: "Your Rundown are ready",
           html: emailHtml,
         }),
       });

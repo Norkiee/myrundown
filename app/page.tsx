@@ -50,7 +50,7 @@ export default function Home() {
             />
           </svg>
           <h1 className="text-2xl font-semibold text-text-primary">
-            Daily Reads
+            My Rundown
           </h1>
         </div>
 

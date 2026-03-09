@@ -94,7 +94,7 @@ export default function OnboardingPage() {
             <line x1="7" y1="12" x2="17" y2="12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
             <line x1="7" y1="16" x2="13" y2="16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
-          <span className="text-xl font-semibold text-text-primary">Daily Reads</span>
+          <span className="text-xl font-semibold text-text-primary">My Rundown</span>
         </div>
 
         {/* Welcome text */}
