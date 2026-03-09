@@ -13,18 +13,7 @@ export async function POST() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Check if profile exists
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("id", user.id)
-    .single();
-
-  if (profile) {
-    return NextResponse.json({ exists: true });
-  }
-
-  // Create profile using service role (bypasses RLS)
+  // Use admin client for all operations to bypass RLS
   const adminClient = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -36,6 +25,18 @@ export async function POST() {
     }
   );
 
+  // Check if profile exists using admin client
+  const { data: profile } = await adminClient
+    .from("profiles")
+    .select("id")
+    .eq("id", user.id)
+    .single();
+
+  if (profile) {
+    return NextResponse.json({ exists: true });
+  }
+
+  // Create profile
   const { error } = await adminClient
     .from("profiles")
     .insert({ id: user.id, email: user.email });
