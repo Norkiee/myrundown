@@ -74,8 +74,8 @@ export function ArticleRow({ article, onToggleRead, onDelete, index = 0 }: Artic
 
       {/* Date or actions */}
       <div className="flex items-center gap-1 shrink-0">
-        <div className={`flex items-center gap-1 transition-all duration-200 ${
-          hovering ? "opacity-100 translate-x-0" : "opacity-0 translate-x-2 pointer-events-none"
+        <div className={`flex items-center gap-1 transition-all duration-200 md:opacity-0 md:translate-x-2 md:pointer-events-none ${
+          hovering ? "md:opacity-100 md:translate-x-0 md:pointer-events-auto" : ""
         }`}>
           <button
             onClick={() => onToggleRead(article.id, !article.read)}
@@ -117,8 +117,8 @@ export function ArticleRow({ article, onToggleRead, onDelete, index = 0 }: Artic
             </svg>
           </button>
         </div>
-        <span className={`text-xs text-text-muted min-w-[60px] text-right transition-all duration-200 ${
-          hovering ? "opacity-0 -translate-x-2" : "opacity-100 translate-x-0"
+        <span className={`text-xs text-text-muted min-w-[60px] text-right transition-all duration-200 hidden md:block ${
+          hovering ? "md:opacity-0 md:-translate-x-2" : "md:opacity-100 md:translate-x-0"
         }`}>
           {formatDate(article.saved_at)}
         </span>

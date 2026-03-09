@@ -38,6 +38,11 @@ body {
   background: var(--color-background);
   color: var(--color-text-secondary);
   font-family: var(--font-sans);
+  /* Safe area insets for PWA on iOS */
+  padding-top: env(safe-area-inset-top);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
 }
 
 /* Override browser autofill styles */
