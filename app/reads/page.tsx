@@ -19,26 +19,21 @@ export default function ReadsPage() {
   const [todayLoading, setTodayLoading] = useState(false);
 
   const loadProfile = useCallback(async () => {
-    let res = await fetch("/api/profile");
-    console.log("Profile fetch status:", res.status);
+    try {
+      let res = await fetch("/api/profile");
 
-    // If profile doesn't exist (500 error), try to create it
-    if (!res.ok) {
-      console.log("Profile not found, creating...");
-      const createRes = await fetch("/api/auth/ensure-profile", { method: "POST" });
-      const createData = await createRes.json();
-      console.log("Ensure profile result:", createData);
-      res = await fetch("/api/profile");
-      console.log("Profile refetch status:", res.status);
-    }
+      // If profile doesn't exist, try to create it
+      if (!res.ok) {
+        await fetch("/api/auth/ensure-profile", { method: "POST" });
+        res = await fetch("/api/profile");
+      }
 
-    if (res.ok) {
-      const data = await res.json();
-      console.log("Profile loaded:", data);
-      setProfile(data);
-    } else {
-      const errorData = await res.json();
-      console.error("Profile load failed:", errorData);
+      if (res.ok) {
+        const data = await res.json();
+        setProfile(data);
+      }
+    } catch (err) {
+      console.error("Profile load error:", err);
     }
   }, []);
 

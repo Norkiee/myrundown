@@ -57,9 +57,8 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (isAuthRoute && user) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/reads";
-    return NextResponse.redirect(url);
+    // Redirect to /reads without preserving error params
+    return NextResponse.redirect(new URL("/reads", request.url));
   }
 
   return supabaseResponse;
