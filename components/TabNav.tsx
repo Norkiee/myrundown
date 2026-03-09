@@ -19,12 +19,12 @@ export function TabNav({ activeTab, onTabChange, counts }: TabNavProps) {
   ];
 
   return (
-    <div className="flex items-center gap-2 mb-6">
+    <div className="flex items-center gap-2 mb-6 overflow-x-auto scrollbar-hide -mx-4 px-4">
       {tabs.map((tab) => (
         <button
           key={tab.id}
           onClick={() => onTabChange(tab.id)}
-          className={`px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 btn-press ${
+          className={`px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 btn-press whitespace-nowrap shrink-0 ${
             activeTab === tab.id
               ? "bg-text-primary text-background"
               : "bg-surface border border-border text-text-muted hover:text-text-secondary hover:border-border-hover"
