@@ -5,7 +5,6 @@ import { useState, useEffect } from "react";
 export function PushNotificationToggle() {
   const [permission, setPermission] = useState<NotificationPermission | "loading">("loading");
   const [subscribed, setSubscribed] = useState(false);
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     // Check if push is supported
@@ -34,13 +33,15 @@ export function PushNotificationToggle() {
   }, []);
 
   const subscribe = async () => {
-    setLoading(true);
+    // Optimistic update - toggle instantly
+    setSubscribed(true);
+
     try {
       const perm = await Notification.requestPermission();
       setPermission(perm);
 
       if (perm !== "granted") {
-        setLoading(false);
+        setSubscribed(false);
         return;
       }
 
@@ -49,11 +50,9 @@ export function PushNotificationToggle() {
       const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
       if (!vapidKey) {
         console.error("VAPID key not found");
-        setLoading(false);
+        setSubscribed(false);
         return;
       }
-
-      console.log("VAPID key length:", vapidKey.length);
 
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
@@ -66,17 +65,19 @@ export function PushNotificationToggle() {
         body: JSON.stringify(subscription.toJSON()),
       });
 
-      if (res.ok) {
-        setSubscribed(true);
+      if (!res.ok) {
+        setSubscribed(false);
       }
     } catch (err) {
       console.error("Push subscription error:", err);
+      setSubscribed(false);
     }
-    setLoading(false);
   };
 
   const unsubscribe = async () => {
-    setLoading(true);
+    // Optimistic update - toggle instantly
+    setSubscribed(false);
+
     try {
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.getSubscription();
@@ -89,12 +90,11 @@ export function PushNotificationToggle() {
         });
 
         await subscription.unsubscribe();
-        setSubscribed(false);
       }
     } catch (err) {
       console.error("Push unsubscribe error:", err);
+      setSubscribed(true); // Revert on error
     }
-    setLoading(false);
   };
 
   if (permission === "denied") {
@@ -109,7 +109,7 @@ export function PushNotificationToggle() {
     );
   }
 
-  const isDisabled = loading || permission === "loading";
+  const isDisabled = permission === "loading";
 
   return (
     <div className="flex items-center justify-between py-3">
@@ -130,7 +130,7 @@ export function PushNotificationToggle() {
         <span
           className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform duration-200 ${
             subscribed ? "translate-x-5" : "translate-x-0"
-          } ${isDisabled ? "opacity-50" : ""}`}
+          }`}
         />
       </button>
     </div>
