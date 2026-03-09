@@ -1,32 +1,79 @@
-# Daily Reads — AI Article Curation Agent
+# My Rundown — AI Article Curation Agent
 
 ## What This Is
 
-Daily Reads is a web app that uses AI to curate a personalized reading list. Every day, it picks 2 articles for the user and generates detailed digests (key takeaways, why it matters, read/skip verdict) so they can decide if the full article is worth their time.
+My Rundown is a web app that uses AI to curate a personalized reading list. Every day at 6 AM, it picks 2 articles for the user and generates detailed digests (key takeaways, why it matters, read/skip verdict) so they can decide if the full article is worth their time.
 
-Users sign up, define their interests, and the system handles the rest: fetching, scoring, picking, and summarizing.
+Users sign up via magic link, define their interests, and the system handles the rest: fetching, scoring, picking, summarizing, and emailing.
+
+**Live URL**: https://myrundown.xyz
+**Repository**: https://github.com/Norkiee/myrundown
 
 ---
 
 ## Tech Stack
 
-- **Framework**: Next.js 14+ (App Router)
+- **Framework**: Next.js 16+ (App Router)
 - **Language**: TypeScript
-- **Database**: Supabase (Postgres + Auth + Edge Functions)
-- **AI**: Anthropic Claude API (claude-sonnet-4-20250514) with web search tool
+- **Database**: Supabase (Postgres + Auth)
+- **AI**:
+  - Article fetching: Claude Sonnet with web search tool
+  - Digest generation: Claude Haiku (cost-efficient, no web search)
 - **Styling**: Tailwind CSS with Switzer font (from CDN Fonts)
+- **Email**: Resend (SMTP for magic links + API for notifications)
 - **Deployment**: Vercel
-- **Cron**: Vercel Cron Jobs (or Supabase pg_cron)
+- **Cron**: Vercel Cron Jobs (daily at 6 AM)
+
+---
+
+## Current Features
+
+### Authentication
+- **Magic link only** — no passwords, no Google OAuth
+- Users enter email, receive magic link via Resend SMTP
+- Supabase handles session management
+- Custom branded email template matching dark theme
+
+### Article Fetching (Automated)
+- Runs daily at 6 AM via Vercel cron
+- Uses Claude Sonnet with web search to find 5-8 articles per user
+- Scores articles 1-10 based on relevance and quality
+- Deduplicates by URL
+
+### Daily Picks
+- Selects 2 top articles per day using deterministic seeded shuffle
+- Ensures consistent picks if user refreshes
+- Stored in `daily_picks` table
+
+### Digest Generation (Automated)
+- Generated immediately after fetch (non-blocking)
+- Uses Claude Haiku for cost efficiency
+- Creates: key takeaways, why it matters, verdict (Must Read / Digest Enough)
+- No web search — uses existing article summary
+
+### Email Notifications
+- Sent as part of the 6 AM fetch cron
+- All users receive email at 6 AM with their daily picks
+- Styled HTML email matching app theme
+- Via Resend API
+- **Note**: User-specific notification times removed (requires Vercel Pro for frequent crons)
+
+### UI/UX
+- Dark, minimal design inspired by Minimal bookmarking app
+- Custom app icon (`app/icon.svg`)
+- Article carousel with navigation dots and arrows below
+- "Read Full Article" and "Done Reading" buttons on cards
+- Hover-based actions on list rows (no keyboard shortcuts)
+- Settings panel for managing topics only (notification time removed)
 
 ---
 
 ## Design System
 
 ### Visual Direction
-Dark, minimal, content-centered. Inspired by Minimal (the bookmarking app). Not generic SaaS — more like a reading tool for one person.
+Dark, minimal, content-centered. Not generic SaaS — a reading tool for one person.
 
-### Specifics
-- **Font**: Switzer (import from `https://fonts.cdnfonts.com/css/switzer`)
+### Colors
 - **Background**: `#080808`
 - **Text primary**: `#ddd8d0`
 - **Text secondary**: `#b5b0a8`
@@ -34,19 +81,17 @@ Dark, minimal, content-centered. Inspired by Minimal (the bookmarking app). Not 
 - **Surface**: `#0e0e0e`
 - **Border**: `#191919`
 - **Accent (CTA)**: `#ddd8d0` on dark (inverted)
-- **Success**: `#48a870` on `#0a1f12`
-- **Content max-width**: `640px`, centered with generous side margins
-- **Border radius**: `8px` for buttons, `10-12px` for cards/panels
-- **No heavy shadows, no gradients**. Flat, bordered surfaces.
-- **Animations**: Subtle fade-ups on cards (200-400ms), no bouncing or spring physics
+- **Success/Green**: `#48a870` on `#0a1f12`
+- **Error/Red**: `#ef4444` on `#1f0a0a`
 
-### Layout Reference
-The app should feel like the Minimal bookmarking app screenshots provided during design:
-- Clean top bar with logo left, actions right
-- Decorative input bar below header (cosmetic, shows tagline)
-- Tab navigation directly above content
-- Table-style list view for queue/all/read views (favicon initial, title, domain, date)
-- Card view for today's picks with digest sections
+### Typography
+- **Font**: Switzer (from `https://fonts.cdnfonts.com/css/switzer`)
+- **Content max-width**: `640px`, centered
+
+### Components
+- **Border radius**: `8px` for buttons, `10-12px` for cards/panels
+- **No heavy shadows, no gradients** — flat, bordered surfaces
+- **Animations**: Subtle fade-ups (200-400ms), no bouncing
 
 ---
 
@@ -66,14 +111,10 @@ create table profiles (
     'economics and monetary policy'
   ],
   daily_pick_count int default 2,
+  notify_time text default '08:00',  -- kept for future use
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
-
--- Enable RLS
-alter table profiles enable row level security;
-create policy "Users can view own profile" on profiles for select using (auth.uid() = id);
-create policy "Users can update own profile" on profiles for update using (auth.uid() = id);
 ```
 
 ### `articles` table
@@ -90,19 +131,8 @@ create table articles (
   read boolean default false,
   saved_at timestamptz default now(),
   read_at timestamptz,
-  
   unique(user_id, url)
 );
-
--- Enable RLS
-alter table articles enable row level security;
-create policy "Users can view own articles" on articles for select using (auth.uid() = user_id);
-create policy "Users can insert own articles" on articles for insert with check (auth.uid() = user_id);
-create policy "Users can update own articles" on articles for update using (auth.uid() = user_id);
-create policy "Users can delete own articles" on articles for delete using (auth.uid() = user_id);
-
--- Index for daily picks query
-create index idx_articles_user_unread on articles(user_id, read, score desc) where read = false;
 ```
 
 ### `daily_picks` table
@@ -112,13 +142,8 @@ create table daily_picks (
   user_id uuid references profiles(id) on delete cascade not null,
   article_id uuid references articles(id) on delete cascade not null,
   pick_date date not null default current_date,
-  
   unique(user_id, article_id, pick_date)
 );
-
-alter table daily_picks enable row level security;
-create policy "Users can view own picks" on daily_picks for select using (auth.uid() = user_id);
-create policy "Users can insert own picks" on daily_picks for insert with check (auth.uid() = user_id);
 ```
 
 ### `digests` table
@@ -132,381 +157,202 @@ create table digests (
   verdict text check (verdict in ('Must Read', 'Digest Enough')) not null,
   created_at timestamptz default now()
 );
-
-alter table digests enable row level security;
-create policy "Users can view own digests" on digests for select using (auth.uid() = user_id);
-create policy "Users can insert own digests" on digests for insert with check (auth.uid() = user_id);
-```
-
-### Trigger: auto-create profile on signup
-```sql
-create or replace function handle_new_user()
-returns trigger as $$
-begin
-  insert into profiles (id, email)
-  values (new.id, new.email);
-  return new;
-end;
-$$ language plpgsql security definer;
-
-create trigger on_auth_user_created
-  after insert on auth.users
-  for each row execute procedure handle_new_user();
 ```
 
 ---
 
 ## API Routes
 
-All routes under `app/api/`. Use Next.js Route Handlers.
+### Articles
+- `GET /api/articles` — List articles with filtering (`?view=queue|all|done`)
+- `GET /api/articles/today` — Today's picks with digests (generates digests in background if missing)
+- `POST /api/articles/fetch` — Manual fetch trigger (used by onboarding)
+- `PATCH /api/articles/[id]` — Update article (mark read/unread)
+- `DELETE /api/articles/[id]` — Remove article
 
-### `POST /api/articles/fetch`
-Triggers the AI agent to search and curate articles.
+### Profile
+- `GET /api/profile` — Get user profile
+- `PATCH /api/profile` — Update topics
 
-**Auth**: Required (read user's topics from profile)
+### Auth
+- `GET /api/auth/callback` — Handle magic link redirect
 
-**Flow**:
-1. Get user's topics from `profiles`
-2. Call Claude API with web search tool enabled
-3. Claude searches the web for recent articles matching the topics
-4. Parse the JSON response (array of articles with title, url, source, summary, score, topic)
-5. Deduplicate against existing articles (by url + user_id)
-6. Insert new articles into `articles` table
-7. Return the new articles
-
-**Claude System Prompt for fetching**:
-```
-You are an article curation agent. Given a list of topics the user is interested in, search the web for the most interesting, recent, and high-quality articles, blog posts, and Twitter/X threads on those topics.
-
-For each article found, return a JSON array of objects with these fields:
-- title: The article title
-- url: The URL
-- source: The publication or author name (just the domain or author, keep it short)
-- summary: A 1-2 sentence summary of the key insight
-- score: A relevance/quality score from 1-10
-- topic: Which user topic this matches
-
-Return ONLY valid JSON. No markdown, no backticks, no preamble. Just the JSON array.
-Find 8-12 articles total, prioritizing:
-1. Recency (last 48 hours preferred)
-2. Quality of insight (not clickbait)
-3. Diversity across the requested topics
-4. Original sources over aggregators
-```
-
-**Claude API call shape**:
-```typescript
-const response = await anthropic.messages.create({
-  model: "claude-sonnet-4-20250514",
-  max_tokens: 4000,
-  system: FETCH_SYSTEM_PROMPT,
-  messages: [{ role: "user", content: userPrompt }],
-  tools: [{ type: "web_search_20250305", name: "web_search" }],
-});
-```
-
-### `POST /api/articles/digest`
-Generates detailed digests for specific articles (typically today's picks).
-
-**Auth**: Required
-
-**Body**: `{ articleIds: string[] }`
-
-**Flow**:
-1. Fetch the articles by ID (verify they belong to the user)
-2. Skip articles that already have a digest
-3. Call Claude API with web search to read and analyze each article
-4. Parse the JSON response
-5. Insert digests into `digests` table
-6. Return the digests
-
-**Claude System Prompt for digesting**:
-```
-You are a reading digest assistant. You will be given articles (title, source, summary, url). Your job is to read each article via web search and produce a detailed digest for the reader.
-
-For EACH article, produce:
-1. A list of 3-5 key takeaways (the most important and interesting points)
-2. A "why it matters" explanation (1-2 sentences on why this is relevant)
-3. A verdict: "Must Read" if the full article is worth reading in full, or "Digest Enough" if the summary covers the essentials
-
-Return ONLY valid JSON. No markdown, no backticks. Format:
-[
-  {
-    "articleId": "the article uuid",
-    "takeaways": ["point 1", "point 2", "point 3"],
-    "whyItMatters": "explanation",
-    "verdict": "Must Read" or "Digest Enough"
-  }
-]
-```
-
-### `GET /api/articles/today`
-Returns today's daily picks for the user.
-
-**Auth**: Required
-
-**Flow**:
-1. Check if picks already exist for today in `daily_picks`
-2. If yes, return those articles with their digests
-3. If no, select 2 articles: sort unread by score desc, take top 6, deterministically shuffle using date as seed, pick first 2
-4. Insert into `daily_picks`
-5. Return articles with any existing digests
-
-### `GET /api/articles`
-Returns articles for the user with filtering.
-
-**Auth**: Required
-
-**Query params**: `?view=unread|read|all&limit=50&offset=0`
-
-### `PATCH /api/articles/[id]`
-Update an article (mark read/unread).
-
-**Auth**: Required
-
-**Body**: `{ read: boolean }`
-
-### `DELETE /api/articles/[id]`
-Remove an article.
-
-**Auth**: Required
-
-### `GET /api/profile`
-Get user profile.
-
-### `PATCH /api/profile`
-Update user profile (topics, display_name, daily_pick_count).
-
-**Body**: `{ topics?: string[], displayName?: string, dailyPickCount?: number }`
+### Cron
+- `GET /api/cron/fetch` — Daily fetch + picks + digests + email (runs at 6 AM)
+- `GET /api/cron/notify` — **DISABLED** (code commented out, kept for reference)
 
 ---
 
 ## Pages
 
 ### `/` — Landing page
-Simple, dark, minimal. Explain what the app does. CTA to sign up. Show a preview of the daily reads UI.
+Simple CTA to sign up with custom icon.
 
 ### `/login` — Auth page
-Supabase Auth UI or custom form. Support email/password and Google OAuth. After login, redirect to `/reads`.
-
-### `/signup` — Registration
-Email + password. After signup, redirect to `/onboarding`.
+Magic link email input only. No password, no Google OAuth.
 
 ### `/onboarding` — Topic setup
-First-time flow after signup. Show default topics, let user customize. Big "Start Reading" button that triggers the first fetch.
+First-time flow after signup. Default topics provided, user can customize. Triggers first article fetch.
 
 ### `/reads` — Main app (protected)
-The core experience. This is the redesigned Daily Reads UI:
-
-**Header**: Logo left, settings icon + "Fetch Articles" button right.
-
-**Decorative input bar**: Cosmetic bar matching the Minimal app style. Shows tagline: "Your curated reading list, powered by AI"
-
-**Tab navigation**:
-- Today's Reads — the 2 daily picks with full card layout + digest sections
-- Queue (N) — unread articles in table list format
-- All (N) — all articles in table list format
-- Done (N) — read articles in table list format
-
-**Today's Reads view**:
-- Each article rendered as a card with: source, topic tag, score badge, title (linked), summary paragraph
-- "Summarize Articles" button in tab bar triggers digest generation
-- After digests load: Key Takeaways list (3-5 dashed items), Why It Matters (italic), Verdict badge (Must Read = green, Digest Enough = blue)
-- "Read Full Article →" primary button + "Done Reading" text button
-
-**List views** (Queue/All/Done):
-- Table format: favicon initial circle | title + domain | date added
-- Actions on hover: checkmark (toggle read), X (remove)
-- Column headers: "Title" and "Created At"
-
-**Settings panel** (toggled by gear icon):
-- Textarea for topics (one per line)
-- Save / Cancel / Clear All Articles buttons
-
-**Footer**: Topic chips showing current interests
-
-### `/reads/settings` (optional, could be inline panel)
-Full settings page if needed: topics, notification preferences, account management.
+- **Header**: Custom icon + "My Rundown" text, settings gear
+- **Tabs**: Today's Reads, Queue (N), All (N), Done (N)
+- **Today view**: Article carousel with digest sections, navigation arrows below
+- **List views**: Table with hover actions (checkmark, X)
+- **Settings panel**: Topics editor only (notification time removed)
 
 ---
 
-## Auth Flow
+## Cron Configuration
 
-Use Supabase Auth with the `@supabase/ssr` package for Next.js App Router.
-
-### Middleware (`middleware.ts`)
-- Refresh session on every request
-- Protect `/reads` and `/api/*` routes (except `/api/auth/*`)
-- Redirect unauthenticated users to `/login`
-- Redirect authenticated users from `/login` to `/reads`
-
-### Client Setup
-```typescript
-// lib/supabase/client.ts — browser client
-import { createBrowserClient } from '@supabase/ssr'
-
-export function createClient() {
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-}
-
-// lib/supabase/server.ts — server client
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
-
-export async function createClient() {
-  const cookieStore = await cookies()
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() { return cookieStore.getAll() },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options))
-        },
-      },
-    }
-  )
-}
-```
-
----
-
-## Cron Jobs (Optional, Phase 2)
-
-### Auto-fetch (daily at 6 AM user's timezone)
-A Vercel cron job or Supabase Edge Function that:
-1. Iterates all users
-2. Calls the fetch endpoint for each
-3. Generates daily picks
-4. Optionally sends email digest
-
-### Auto-digest (daily at 6:30 AM)
-After picks are generated:
-1. For each user's daily picks without digests
-2. Generate digests
-3. Optionally email the digest
-
-Cron config in `vercel.json`:
+**`vercel.json`**:
 ```json
 {
   "crons": [
-    { "path": "/api/cron/fetch", "schedule": "0 6 * * *" },
-    { "path": "/api/cron/digest", "schedule": "30 6 * * *" }
+    {
+      "path": "/api/cron/fetch",
+      "schedule": "0 6 * * *"
+    }
   ]
 }
 ```
 
-Secure cron routes with `CRON_SECRET` env var check.
+The fetch cron does everything:
+1. Fetches new articles for all users (Claude Sonnet + web search)
+2. Creates daily picks
+3. Generates digests (Claude Haiku)
+4. Sends email notifications (Resend API)
 
 ---
 
 ## Environment Variables
 
 ```env
+# Supabase
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
+
+# Anthropic
 ANTHROPIC_API_KEY=
+
+# Resend (for email notifications)
+RESEND_API_KEY=
+RESEND_FROM_EMAIL=My Rundown <noreply@myrundown.xyz>
+
+# Vercel Cron
 CRON_SECRET=
+
+# App URL
+NEXT_PUBLIC_APP_URL=https://myrundown.xyz
 ```
+
+### Supabase Auth Settings
+- **Site URL**: `https://myrundown.xyz`
+- **Redirect URLs**: `https://myrundown.xyz/**`, `https://myrundown.xyz/api/auth/callback`
+- **SMTP**: Configured via Resend (smtp.resend.com, port 465)
 
 ---
 
 ## File Structure
 
 ```
-daily-reads/
+myrundown/
 ├── CLAUDE.md
 ├── app/
+│   ├── icon.svg                # Custom app icon
 │   ├── layout.tsx              # Root layout, Switzer font, dark theme
 │   ├── page.tsx                # Landing page
-│   ├── login/
-│   │   └── page.tsx            # Login form
-│   ├── signup/
-│   │   └── page.tsx            # Signup form
-│   ├── onboarding/
-│   │   └── page.tsx            # Topic setup (protected)
+│   ├── login/page.tsx          # Magic link auth
+│   ├── onboarding/page.tsx     # Topic setup
 │   ├── reads/
-│   │   ├── layout.tsx          # App shell (protected)
+│   │   ├── layout.tsx          # App shell
 │   │   └── page.tsx            # Main reads view
 │   └── api/
-│       ├── auth/
-│       │   ├── callback/route.ts
-│       │   ├── login/route.ts
-│       │   └── signup/route.ts
+│       ├── auth/callback/route.ts
 │       ├── articles/
-│       │   ├── route.ts        # GET list, POST is unused
-│       │   ├── fetch/route.ts  # POST trigger fetch
-│       │   ├── digest/route.ts # POST generate digests
-│       │   ├── today/route.ts  # GET today's picks
-│       │   └── [id]/route.ts   # PATCH, DELETE single article
-│       ├── profile/
-│       │   └── route.ts        # GET, PATCH profile
+│       │   ├── route.ts
+│       │   ├── fetch/route.ts
+│       │   ├── today/route.ts
+│       │   └── [id]/route.ts
+│       ├── profile/route.ts
 │       └── cron/
-│           ├── fetch/route.ts
-│           └── digest/route.ts
+│           ├── fetch/route.ts   # Main cron (fetch + digest + email)
+│           └── notify/route.ts  # Disabled
 ├── components/
-│   ├── ArticleCard.tsx         # Today's pick card with digest
-│   ├── ArticleRow.tsx          # Table row for list views
-│   ├── DigestSection.tsx       # Takeaways + verdict display
-│   ├── Header.tsx              # App header
+│   ├── ArticleCarousel.tsx     # Today's picks carousel
+│   ├── ArticleRow.tsx          # List row with hover actions
+│   ├── AuthForm.tsx            # Magic link form
+│   ├── DigestSection.tsx       # Takeaways + verdict
+│   ├── Header.tsx              # App header with icon
 │   ├── SettingsPanel.tsx       # Topics editor
-│   ├── TabNav.tsx              # View tabs
-│   └── AuthForm.tsx            # Login/signup form
+│   ├── Skeleton.tsx            # Loading skeletons
+│   └── TabNav.tsx              # View tabs
 ├── lib/
 │   ├── supabase/
 │   │   ├── client.ts
 │   │   ├── server.ts
 │   │   └── middleware.ts
-│   ├── anthropic.ts            # Claude API client + prompts
-│   ├── picks.ts                # Daily pick selection logic
+│   ├── anthropic.ts            # Claude API + prompts
+│   ├── picks.ts                # Daily pick selection
 │   └── types.ts                # TypeScript types
 ├── middleware.ts
-├── tailwind.config.ts
-├── package.json
-└── .env.local
+├── vercel.json
+└── package.json
 ```
 
 ---
 
 ## Key Implementation Notes
 
-1. **Claude API calls happen server-side only**. The Anthropic API key never reaches the client. All AI interactions go through Next.js API routes.
+1. **Magic link auth only** — No passwords stored, no OAuth complexity. Users receive branded emails via Resend SMTP.
 
-2. **Daily pick selection is deterministic**. Given the same set of unread articles and the same date, the same 2 articles are always picked. This uses a seeded shuffle based on the date string so picks stay consistent if the user refreshes.
+2. **Cost optimization** — Article fetching uses Sonnet (needs web search), but digest generation uses Haiku (cheaper, no web search needed).
 
-3. **Deduplication by URL**. When fetching new articles, skip any URL the user already has. The `unique(user_id, url)` constraint handles this at the DB level too — use `on conflict do nothing`.
+3. **Non-blocking digests** — `/api/articles/today` triggers digest generation in background and returns immediately. User sees loading state, refreshes to see digests.
 
-4. **Parse Claude's response defensively**. The response might include markdown fences or preamble text despite the prompt. Always try to extract JSON: strip backtick fences, look for `[...]` pattern, try/catch the parse.
+4. **Single daily cron** — Everything happens at 6 AM: fetch → picks → digests → email. No frequent crons (Vercel Hobby limitation).
 
-5. **Digests are generated on-demand, not automatically**. The user clicks "Summarize Articles" on the today view. This keeps API costs predictable.
+5. **Deterministic picks** — Same articles + same date = same picks. Uses seeded shuffle based on date string.
 
-6. **RLS handles authorization**. Every table has row-level security tied to `auth.uid()`. API routes still validate auth but don't need manual user_id filtering in queries.
+6. **Custom icon** — SVG icon at `app/icon.svg` used as favicon and throughout the app.
 
-7. **The decorative input bar is not functional**. It's purely visual, matching the Minimal bookmarking app aesthetic. It shows the tagline and a ⌘F shortcut badge.
+7. **No keyboard shortcuts** — Removed due to complexity. Hover-based actions only.
 
 ---
 
-## Phase 1 (MVP — build this first)
+## Removed Features
+
+- **Google OAuth** — Removed, magic link only
+- **Keyboard shortcuts** — Removed (j/k navigation, m to mark read)
+- **User-specific notification times** — Removed (requires Vercel Pro for frequent crons)
+- **Manual fetch button** — Removed (auto-fetch only)
+- **Score badge on cards** — Removed for cleaner UI
+
+---
+
+## Completed Work
+
+### Phase 1 (MVP)
 - [x] Supabase project setup + schema
-- [x] Auth (signup, login, session management)
+- [x] Auth (magic link via Supabase OTP)
 - [x] Profile + topics management
-- [x] Manual article fetching via Claude + web search
+- [x] Article fetching via Claude + web search
 - [x] Article list views (today, queue, all, done)
 - [x] Daily picks selection
-- [x] On-demand digest generation
+- [x] Digest generation
 - [x] Mark read / remove articles
 
-## Phase 2 (After MVP works)
+### Phase 2
 - [x] Onboarding flow for new users
 - [x] Cron-based auto-fetch + auto-digest
-- [ ] Email digest delivery
+- [x] Email notifications (via Resend, sent with fetch cron)
 - [x] Landing page
-- [x] Google OAuth
-- [x] Keyboard shortcuts (j/k navigation, m to mark read)
+- [x] Custom app icon
+- [x] Renamed to "My Rundown"
+- [x] Domain: myrundown.xyz
+
+### Not Implemented
 - [ ] Article search/filter
+- [ ] User-specific notification times (needs Vercel Pro)
+- [ ] Google OAuth (removed by choice)
