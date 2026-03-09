@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import webpush from "web-push";
 import {
   anthropic,
   extractText,
@@ -309,10 +310,80 @@ ${articles.map((a) => `Article ID: ${a.id}\nTitle: ${a.title}\nSource: ${a.sourc
     }
   }
 
+  // Send push notifications to users with subscriptions
+  const pushResults: { userId: string; sent: number; failed: number }[] = [];
+
+  // Only send push notifications if VAPID keys are configured
+  if (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+    webpush.setVapidDetails(
+      "mailto:noreply@myrundown.xyz",
+      process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+      process.env.VAPID_PRIVATE_KEY
+    );
+
+    for (const profile of profiles || []) {
+      try {
+        // Check if user has picks for today
+        const { data: picks } = await supabase
+          .from("daily_picks")
+          .select("article_id")
+          .eq("user_id", profile.id)
+          .eq("pick_date", today);
+
+        if (!picks || picks.length === 0) continue;
+
+        // Get user's push subscriptions
+        const { data: subscriptions } = await supabase
+          .from("push_subscriptions")
+          .select("endpoint, p256dh, auth")
+          .eq("user_id", profile.id);
+
+        if (!subscriptions || subscriptions.length === 0) continue;
+
+        let sent = 0;
+        let failed = 0;
+
+        for (const sub of subscriptions) {
+          try {
+            await webpush.sendNotification(
+              {
+                endpoint: sub.endpoint,
+                keys: {
+                  p256dh: sub.p256dh,
+                  auth: sub.auth,
+                },
+              },
+              JSON.stringify({
+                title: "Your Rundown is ready",
+                body: `${picks.length} articles curated for you today`,
+                url: "/reads",
+              })
+            );
+            sent++;
+          } catch (err) {
+            failed++;
+            // Remove invalid subscriptions
+            if ((err as { statusCode?: number }).statusCode === 410) {
+              await supabase
+                .from("push_subscriptions")
+                .delete()
+                .eq("endpoint", sub.endpoint);
+            }
+          }
+        }
+
+        pushResults.push({ userId: profile.id, sent, failed });
+      } catch (error) {
+        console.error(`Error sending push for user ${profile.id}:`, error);
+      }
+    }
+  }
+
   return NextResponse.json({
     processed: results.length,
     fetchResults: results,
     digestResults,
     emailResults,
+    pushResults,
   });
 }

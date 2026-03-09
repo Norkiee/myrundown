@@ -2,6 +2,7 @@
 
 import { useState, KeyboardEvent } from "react";
 import type { Profile } from "@/lib/types";
+import { PushNotificationToggle } from "./PushNotificationToggle";
 
 interface SettingsPanelProps {
   profile: Profile;
@@ -138,8 +139,13 @@ export function SettingsPanel({
       </div>
 
 
+      {/* Notifications */}
+      <div className="mt-6 pt-4 border-t border-border">
+        <PushNotificationToggle />
+      </div>
+
       {/* Actions */}
-      <div className="flex items-center gap-3 mt-6 pt-4 border-t border-border">
+      <div className="flex items-center gap-3 mt-4 pt-4 border-t border-border">
         <button
           onClick={handleSave}
           disabled={saving}
