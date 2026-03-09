@@ -8,7 +8,15 @@ export function PushNotificationToggle() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!("Notification" in window) || !("serviceWorker" in navigator)) {
+    // Check if push is supported
+    if (!("Notification" in window) || !("serviceWorker" in navigator) || !("PushManager" in window)) {
+      setPermission("denied");
+      return;
+    }
+
+    // Check if VAPID key is available
+    if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) {
+      console.error("VAPID public key not configured");
       setPermission("denied");
       return;
     }
@@ -20,6 +28,8 @@ export function PushNotificationToggle() {
       registration.pushManager.getSubscription().then((subscription) => {
         setSubscribed(!!subscription);
       });
+    }).catch((err) => {
+      console.error("Service worker not ready:", err);
     });
   }, []);
 
@@ -80,10 +90,6 @@ export function PushNotificationToggle() {
     setLoading(false);
   };
 
-  if (permission === "loading") {
-    return null;
-  }
-
   if (permission === "denied") {
     return (
       <div className="flex items-center justify-between py-3">
@@ -96,6 +102,8 @@ export function PushNotificationToggle() {
     );
   }
 
+  const isDisabled = loading || permission === "loading";
+
   return (
     <div className="flex items-center justify-between py-3">
       <div>
@@ -103,8 +111,9 @@ export function PushNotificationToggle() {
         <p className="text-xs text-text-muted">Get notified when daily reads are ready</p>
       </div>
       <button
+        type="button"
         onClick={subscribed ? unsubscribe : subscribe}
-        disabled={loading}
+        disabled={isDisabled}
         className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
           subscribed ? "bg-accent-green" : "bg-border"
         } disabled:opacity-50`}
@@ -114,7 +123,7 @@ export function PushNotificationToggle() {
         <span
           className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform duration-200 ${
             subscribed ? "translate-x-5" : "translate-x-0"
-          } ${loading ? "opacity-50" : ""}`}
+          } ${isDisabled ? "opacity-50" : ""}`}
         />
       </button>
     </div>
