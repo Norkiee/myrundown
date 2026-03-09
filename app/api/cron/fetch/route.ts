@@ -232,9 +232,87 @@ ${articles.map((a) => `Article ID: ${a.id}\nTitle: ${a.title}\nSource: ${a.sourc
     }
   }
 
+  // Send email notifications to all users with picks
+  const emailResults: { userId: string; sent: boolean; error?: string }[] = [];
+
+  for (const profile of profiles || []) {
+    try {
+      // Get user email
+      const { data: fullProfile } = await supabase
+        .from("profiles")
+        .select("email")
+        .eq("id", profile.id)
+        .single();
+
+      if (!fullProfile?.email) continue;
+
+      // Get today's picks with article details
+      const { data: picks } = await supabase
+        .from("daily_picks")
+        .select(`
+          article_id,
+          articles (title, url, source, summary)
+        `)
+        .eq("user_id", profile.id)
+        .eq("pick_date", today);
+
+      if (!picks || picks.length === 0) continue;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const articles = picks.map((p: any) => p.articles).filter(Boolean);
+
+      const emailHtml = `
+        <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; background: #080808; padding: 32px; color: #ddd8d0;">
+          <h1 style="color: #ddd8d0; margin-bottom: 8px;">Your Daily Reads</h1>
+          <p style="color: #b5b0a8; margin-bottom: 24px;">Here are today's curated articles for you:</p>
+          ${articles.map((a: { title: string; url: string; source: string; summary: string }) => `
+            <div style="margin: 16px 0; padding: 16px; border: 1px solid #191919; border-radius: 10px; background: #0e0e0e;">
+              <p style="color: #888; font-size: 13px; margin: 0 0 8px;">${a.source}</p>
+              <h3 style="margin: 0 0 8px;"><a href="${a.url}" style="color: #ddd8d0; text-decoration: none;">${a.title}</a></h3>
+              <p style="color: #b5b0a8; font-size: 14px; margin: 0;">${a.summary}</p>
+            </div>
+          `).join("")}
+          <p style="color: #888; font-size: 14px; margin-top: 24px;">
+            <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://myrundown.vercel.app"}/reads" style="color: #ddd8d0;">
+              Read more in the app →
+            </a>
+          </p>
+        </div>
+      `;
+
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+        },
+        body: JSON.stringify({
+          from: process.env.RESEND_FROM_EMAIL || "Daily Reads <noreply@myrundown.com>",
+          to: fullProfile.email,
+          subject: "Your Daily Reads are ready",
+          html: emailHtml,
+        }),
+      });
+
+      if (res.ok) {
+        emailResults.push({ userId: profile.id, sent: true });
+      } else {
+        const err = await res.text();
+        emailResults.push({ userId: profile.id, sent: false, error: err });
+      }
+    } catch (error) {
+      emailResults.push({
+        userId: profile.id,
+        sent: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+
   return NextResponse.json({
     processed: results.length,
     fetchResults: results,
     digestResults,
+    emailResults,
   });
 }
