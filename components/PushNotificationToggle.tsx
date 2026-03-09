@@ -105,13 +105,17 @@ export function PushNotificationToggle() {
       <button
         onClick={subscribed ? unsubscribe : subscribe}
         disabled={loading}
-        className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
-          subscribed
-            ? "bg-accent-green-bg text-accent-green border border-accent-green/30"
-            : "bg-surface border border-border text-text-secondary hover:border-border-hover"
+        className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
+          subscribed ? "bg-accent-green" : "bg-border"
         } disabled:opacity-50`}
+        role="switch"
+        aria-checked={subscribed}
       >
-        {loading ? "..." : subscribed ? "On" : "Off"}
+        <span
+          className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform duration-200 ${
+            subscribed ? "translate-x-5" : "translate-x-0"
+          } ${loading ? "opacity-50" : ""}`}
+        />
       </button>
     </div>
   );

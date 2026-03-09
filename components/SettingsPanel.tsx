@@ -21,6 +21,9 @@ export function SettingsPanel({
   const [clearing, setClearing] = useState(false);
   const [newTopicIndex, setNewTopicIndex] = useState<number | null>(null);
 
+  // Check if topics have changed
+  const hasChanges = JSON.stringify(topics) !== JSON.stringify(profile.topics);
+
   const addTopic = (value: string) => {
     const trimmed = value.trim();
     if (trimmed && !topics.includes(trimmed)) {
@@ -148,8 +151,8 @@ export function SettingsPanel({
       <div className="flex items-center gap-3 mt-4 pt-4 border-t border-border">
         <button
           onClick={handleSave}
-          disabled={saving}
-          className="px-4 py-2 bg-text-primary text-background font-medium rounded-lg hover:bg-text-secondary transition-all duration-200 text-sm disabled:opacity-50 btn-press hover-lift flex items-center gap-2"
+          disabled={saving || !hasChanges}
+          className="px-4 py-2 bg-text-primary text-background font-medium rounded-lg hover:bg-text-secondary transition-all duration-200 text-sm disabled:opacity-50 disabled:cursor-not-allowed btn-press hover-lift flex items-center gap-2"
         >
           {saving ? (
             <>
