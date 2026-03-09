@@ -273,7 +273,7 @@ ${articles.map((a) => `Article ID: ${a.id}\nTitle: ${a.title}\nSource: ${a.sourc
             </div>
           `).join("")}
           <p style="color: #888; font-size: 14px; margin-top: 24px;">
-            <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://myrundown.vercel.app"}/reads" style="color: #ddd8d0;">
+            <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://myrundown.xyz"}/reads" style="color: #ddd8d0;">
               Read more in the app →
             </a>
           </p>
@@ -287,7 +287,7 @@ ${articles.map((a) => `Article ID: ${a.id}\nTitle: ${a.title}\nSource: ${a.sourc
           Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
         },
         body: JSON.stringify({
-          from: process.env.RESEND_FROM_EMAIL || "My Rundown <noreply@myrundown.com>",
+          from: process.env.RESEND_FROM_EMAIL || "My Rundown <noreply@myrundown.xyz>",
           to: fullProfile.email,
           subject: "Your Rundown is ready",
           html: emailHtml,

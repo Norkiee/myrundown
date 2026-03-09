@@ -81,7 +81,7 @@ export async function GET(request: Request) {
             </div>
           `).join("")}
           <p style="color: #888; font-size: 14px; margin-top: 24px;">
-            <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://dailyreads.app"}/reads" style="color: #333;">
+            <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://myrundown.xyz"}/reads" style="color: #333;">
               Read more in the app →
             </a>
           </p>
@@ -95,9 +95,9 @@ export async function GET(request: Request) {
           Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
         },
         body: JSON.stringify({
-          from: process.env.RESEND_FROM_EMAIL || "My Rundown <noreply@dailyreads.app>",
+          from: process.env.RESEND_FROM_EMAIL || "My Rundown <noreply@myrundown.xyz>",
           to: profile.email,
-          subject: "Your Rundown are ready",
+          subject: "Your Rundown is ready",
           html: emailHtml,
         }),
       });
