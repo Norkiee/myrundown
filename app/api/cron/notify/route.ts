@@ -1,8 +1,19 @@
 import { NextResponse } from "next/server";
+
+// This route is disabled - notifications are now sent in the fetch cron at 6 AM
+// To re-enable user-specific notification times, uncomment this code and add
+// the route back to vercel.json (requires Vercel Pro for frequent cron jobs)
+
+export async function GET() {
+  return NextResponse.json({
+    message: "Notifications disabled - sent via fetch cron instead",
+  });
+}
+
+/*
 import { createServerClient } from "@supabase/ssr";
 
 export async function GET(request: Request) {
-  // Verify cron secret
   const authHeader = request.headers.get("authorization");
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -19,13 +30,11 @@ export async function GET(request: Request) {
     }
   );
 
-  // Get current time in HH:MM format
   const now = new Date();
   const currentHour = now.getUTCHours().toString().padStart(2, "0");
-  const currentMinute = Math.floor(now.getUTCMinutes() / 15) * 15; // Round to 15-min intervals
+  const currentMinute = Math.floor(now.getUTCMinutes() / 15) * 15;
   const currentTime = `${currentHour}:${currentMinute.toString().padStart(2, "0")}`;
 
-  // Find users whose notify_time matches (within 15 min window)
   const { data: profiles, error: profilesError } = await supabase
     .from("profiles")
     .select("id, email, notify_time")
@@ -39,7 +48,6 @@ export async function GET(request: Request) {
   const results: { email: string; sent: boolean; error?: string }[] = [];
 
   for (const profile of profiles || []) {
-    // Check if notify_time matches current time window (within 15 mins)
     if (!profile.notify_time) continue;
 
     const [notifyHour, notifyMinute] = profile.notify_time.split(":").map(Number);
@@ -48,10 +56,8 @@ export async function GET(request: Request) {
     const notifyMins = notifyHour * 60 + notifyMinute;
     const currMins = currHour * 60 + currMinute;
 
-    // Skip if not within 15-minute window
     if (Math.abs(notifyMins - currMins) > 15) continue;
 
-    // Get today's picks for this user
     const today = new Date().toISOString().split("T")[0];
     const { data: picks } = await supabase
       .from("daily_picks")
@@ -64,9 +70,7 @@ export async function GET(request: Request) {
 
     if (!picks || picks.length === 0) continue;
 
-    // Send email via Resend
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const articles = picks.map((p: any) => p.articles).filter(Boolean);
 
       const emailHtml = `
@@ -123,3 +127,4 @@ export async function GET(request: Request) {
     results,
   });
 }
+*/
