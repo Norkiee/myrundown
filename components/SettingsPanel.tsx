@@ -1,29 +1,12 @@
 "use client";
 
-import { useState, KeyboardEvent, useRef, useEffect } from "react";
+import { useState, KeyboardEvent } from "react";
 import type { Profile } from "@/lib/types";
 
 interface SettingsPanelProps {
   profile: Profile;
   onSave: (profile: Profile) => void;
   onCancel: () => void;
-}
-
-const HOURS = Array.from({ length: 12 }, (_, i) => i + 1);
-const MINUTES = ["00", "15", "30", "45"];
-
-function formatTime12(time24: string): string {
-  const [hours, minutes] = time24.split(":").map(Number);
-  const period = hours >= 12 ? "PM" : "AM";
-  const hours12 = hours % 12 || 12;
-  return `${hours12}:${minutes.toString().padStart(2, "0")} ${period}`;
-}
-
-function to24Hour(hour: number, minute: string, period: "AM" | "PM"): string {
-  let h = hour;
-  if (period === "PM" && hour !== 12) h += 12;
-  if (period === "AM" && hour === 12) h = 0;
-  return `${h.toString().padStart(2, "0")}:${minute}`;
 }
 
 export function SettingsPanel({
@@ -33,39 +16,9 @@ export function SettingsPanel({
 }: SettingsPanelProps) {
   const [topics, setTopics] = useState<string[]>(profile.topics);
   const [inputValue, setInputValue] = useState("");
-  const [notifyTime, setNotifyTime] = useState(profile.notify_time || "08:00");
   const [saving, setSaving] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [newTopicIndex, setNewTopicIndex] = useState<number | null>(null);
-  const [showTimePicker, setShowTimePicker] = useState(false);
-  const timePickerRef = useRef<HTMLDivElement>(null);
-
-  // Parse current time
-  const [hours24, mins] = notifyTime.split(":").map(Number);
-  const currentPeriod: "AM" | "PM" = hours24 >= 12 ? "PM" : "AM";
-  const currentHour = hours24 % 12 || 12;
-  const currentMinute = mins.toString().padStart(2, "0");
-
-  const [selectedHour, setSelectedHour] = useState(currentHour);
-  const [selectedMinute, setSelectedMinute] = useState(currentMinute);
-  const [selectedPeriod, setSelectedPeriod] = useState<"AM" | "PM">(currentPeriod);
-
-  // Close picker when clicking outside
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (timePickerRef.current && !timePickerRef.current.contains(e.target as Node)) {
-        setShowTimePicker(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  // Update time when picker values change
-  useEffect(() => {
-    const newTime = to24Hour(selectedHour, selectedMinute, selectedPeriod);
-    setNotifyTime(newTime);
-  }, [selectedHour, selectedMinute, selectedPeriod]);
 
   const addTopic = (value: string) => {
     const trimmed = value.trim();
@@ -111,7 +64,7 @@ export function SettingsPanel({
       const res = await fetch("/api/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topics, notifyTime }),
+        body: JSON.stringify({ topics }),
       });
 
       if (res.ok) {
@@ -184,105 +137,6 @@ export function SettingsPanel({
         />
       </div>
 
-      {/* Notification Time */}
-      <div className="mt-6">
-        <label className="block text-xs font-medium text-text-primary tracking-wide uppercase mb-2">
-          Daily Notification Time
-        </label>
-        <p className="text-sm text-text-muted mb-3">
-          When should we notify you about new articles?
-        </p>
-
-        <div className="relative" ref={timePickerRef}>
-          <button
-            type="button"
-            onClick={() => setShowTimePicker(!showTimePicker)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-background border border-border rounded-lg text-text-primary hover:border-border-hover transition-all duration-200 text-sm w-full sm:w-auto"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-text-muted">
-              <circle cx="12" cy="12" r="10" />
-              <polyline points="12 6 12 12 16 14" />
-            </svg>
-            {formatTime12(notifyTime)}
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-text-muted ml-auto">
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
-          </button>
-
-          {showTimePicker && (
-            <div className="absolute top-full left-0 mt-2 p-3 bg-surface border border-border rounded-xl shadow-lg z-10 animate-scale-in">
-              <div className="flex gap-2">
-                {/* Hours */}
-                <div className="flex flex-col gap-1">
-                  <span className="text-xs text-text-muted text-center mb-1">Hour</span>
-                  <div className="grid grid-cols-4 gap-1">
-                    {HOURS.map((h) => (
-                      <button
-                        key={h}
-                        onClick={() => setSelectedHour(h)}
-                        className={`w-8 h-8 rounded-lg text-sm transition-all ${
-                          selectedHour === h
-                            ? "bg-text-primary text-background"
-                            : "text-text-secondary hover:bg-border"
-                        }`}
-                      >
-                        {h}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Minutes */}
-                <div className="flex flex-col gap-1">
-                  <span className="text-xs text-text-muted text-center mb-1">Min</span>
-                  <div className="flex flex-col gap-1">
-                    {MINUTES.map((m) => (
-                      <button
-                        key={m}
-                        onClick={() => setSelectedMinute(m)}
-                        className={`w-10 h-8 rounded-lg text-sm transition-all ${
-                          selectedMinute === m
-                            ? "bg-text-primary text-background"
-                            : "text-text-secondary hover:bg-border"
-                        }`}
-                      >
-                        {m}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* AM/PM */}
-                <div className="flex flex-col gap-1">
-                  <span className="text-xs text-text-muted text-center mb-1">&nbsp;</span>
-                  <div className="flex flex-col gap-1">
-                    {(["AM", "PM"] as const).map((p) => (
-                      <button
-                        key={p}
-                        onClick={() => setSelectedPeriod(p)}
-                        className={`w-10 h-8 rounded-lg text-sm transition-all ${
-                          selectedPeriod === p
-                            ? "bg-text-primary text-background"
-                            : "text-text-secondary hover:bg-border"
-                        }`}
-                      >
-                        {p}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <button
-                onClick={() => setShowTimePicker(false)}
-                className="w-full mt-3 py-2 text-sm text-text-primary bg-border hover:bg-border-hover rounded-lg transition-all"
-              >
-                Done
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
 
       {/* Actions */}
       <div className="flex items-center gap-3 mt-6 pt-4 border-t border-border">
