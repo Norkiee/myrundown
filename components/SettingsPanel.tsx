@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, KeyboardEvent } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types";
 import { PushNotificationToggle } from "./PushNotificationToggle";
 
@@ -19,10 +21,19 @@ export function SettingsPanel({
   const [inputValue, setInputValue] = useState("");
   const [saving, setSaving] = useState(false);
   const [clearing, setClearing] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const [newTopicIndex, setNewTopicIndex] = useState<number | null>(null);
+  const router = useRouter();
 
   // Check if topics have changed
   const hasChanges = JSON.stringify(topics) !== JSON.stringify(profile.topics);
+
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+  };
 
   const addTopic = (value: string) => {
     const trimmed = value.trim();
@@ -145,6 +156,21 @@ export function SettingsPanel({
       {/* Notifications */}
       <div className="mt-6 pt-4 border-t border-border">
         <PushNotificationToggle />
+      </div>
+
+      {/* Account */}
+      <div className="mt-4 pt-4 border-t border-border flex items-center justify-between">
+        <div>
+          <p className="text-sm text-text-primary">Account</p>
+          <p className="text-xs text-text-muted">{profile.email}</p>
+        </div>
+        <button
+          onClick={handleLogout}
+          disabled={loggingOut}
+          className="px-3 py-1.5 text-xs font-medium text-text-muted hover:text-text-primary hover:bg-surface rounded-lg transition-colors disabled:opacity-50"
+        >
+          {loggingOut ? "..." : "Log out"}
+        </button>
       </div>
 
       {/* Actions */}
