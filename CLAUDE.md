@@ -56,15 +56,32 @@ Users sign up via magic link, define their interests, and the system handles the
 - All users receive email at 6 AM with their daily picks
 - Styled HTML email matching app theme
 - Via Resend API
-- **Note**: User-specific notification times removed (requires Vercel Pro for frequent crons)
+
+### Push Notifications
+- Web Push API with VAPID keys
+- Toggle in settings panel (switch UI with optimistic updates)
+- Sent alongside emails in the 6 AM cron
+- Service worker handles incoming pushes and notification clicks
+- Auto-removes invalid subscriptions (410 status)
+- Test endpoint at `/api/push/test` for manual testing
+
+### PWA (Progressive Web App)
+- Installable on iOS, Android, and desktop
+- Standalone display mode (no browser chrome)
+- Custom icons (192px, 512px, maskable, apple-touch-icon)
+- Offline fallback page
+- Service worker with network-first strategy
+- Safe area insets for iOS notch/home indicator
 
 ### UI/UX
 - Dark, minimal design inspired by Minimal bookmarking app
 - Custom app icon (`app/icon.svg`)
 - Article carousel with navigation dots and arrows below
 - "Read Full Article" and "Done Reading" buttons on cards
-- Hover-based actions on list rows (no keyboard shortcuts)
-- Settings panel for managing topics only (notification time removed)
+- Hover-based actions on desktop, always-visible on mobile
+- Tab pills horizontally scrollable on mobile
+- Settings panel with: topics editor, push notification toggle, logout button
+- Save button disabled when no changes made
 
 ---
 
@@ -159,6 +176,19 @@ create table digests (
 );
 ```
 
+### `push_subscriptions` table
+```sql
+create table push_subscriptions (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references profiles(id) on delete cascade not null,
+  endpoint text not null,
+  p256dh text not null,
+  auth text not null,
+  created_at timestamptz default now(),
+  unique(user_id, endpoint)
+);
+```
+
 ---
 
 ## API Routes
@@ -175,10 +205,17 @@ create table digests (
 - `PATCH /api/profile` — Update topics
 
 ### Auth
-- `GET /api/auth/callback` — Handle magic link redirect
+- `GET /api/auth/callback` — Server-side magic link handler (legacy, kept for compatibility)
+- `GET /auth/callback` — Client-side auth callback page (handles PKCE, token_hash, hash fragments)
+- `POST /api/auth/ensure-profile` — Creates profile if missing (uses service role to bypass RLS)
+
+### Push Notifications
+- `POST /api/push/subscribe` — Save push subscription
+- `DELETE /api/push/subscribe` — Remove push subscription
+- `POST /api/push/test` — Send test notification to all subscribers (requires CRON_SECRET)
 
 ### Cron
-- `GET /api/cron/fetch` — Daily fetch + picks + digests + email (runs at 6 AM)
+- `GET /api/cron/fetch` — Daily fetch + picks + digests + email + push (runs at 6 AM)
 - `GET /api/cron/notify` — **DISABLED** (code commented out, kept for reference)
 
 ---
@@ -243,13 +280,19 @@ RESEND_FROM_EMAIL=My Rundown <noreply@myrundown.xyz>
 # Vercel Cron
 CRON_SECRET=
 
+# Push Notifications (VAPID keys)
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=
+VAPID_PRIVATE_KEY=
+
 # App URL
 NEXT_PUBLIC_APP_URL=https://myrundown.xyz
 ```
 
+To generate new VAPID keys: `npx web-push generate-vapid-keys`
+
 ### Supabase Auth Settings
 - **Site URL**: `https://myrundown.xyz`
-- **Redirect URLs**: `https://myrundown.xyz/**`, `https://myrundown.xyz/api/auth/callback`
+- **Redirect URLs**: `https://myrundown.xyz/**`, `https://myrundown.xyz/auth/callback`
 - **SMTP**: Configured via Resend (smtp.resend.com, port 465)
 
 ---
@@ -261,33 +304,42 @@ myrundown/
 ├── CLAUDE.md
 ├── app/
 │   ├── icon.svg                # Custom app icon
-│   ├── layout.tsx              # Root layout, Switzer font, dark theme
+│   ├── layout.tsx              # Root layout, Switzer font, dark theme, PWA meta
 │   ├── page.tsx                # Landing page
 │   ├── login/page.tsx          # Magic link auth
 │   ├── onboarding/page.tsx     # Topic setup
+│   ├── offline/page.tsx        # PWA offline fallback
+│   ├── auth/callback/page.tsx  # Client-side auth callback
 │   ├── reads/
 │   │   ├── layout.tsx          # App shell
 │   │   └── page.tsx            # Main reads view
 │   └── api/
-│       ├── auth/callback/route.ts
+│       ├── auth/
+│       │   ├── callback/route.ts    # Server-side auth (legacy)
+│       │   └── ensure-profile/route.ts
 │       ├── articles/
 │       │   ├── route.ts
 │       │   ├── fetch/route.ts
 │       │   ├── today/route.ts
 │       │   └── [id]/route.ts
 │       ├── profile/route.ts
+│       ├── push/
+│       │   ├── subscribe/route.ts   # Save/delete push subscriptions
+│       │   └── test/route.ts        # Test push endpoint
 │       └── cron/
-│           ├── fetch/route.ts   # Main cron (fetch + digest + email)
+│           ├── fetch/route.ts   # Main cron (fetch + digest + email + push)
 │           └── notify/route.ts  # Disabled
 ├── components/
 │   ├── ArticleCarousel.tsx     # Today's picks carousel
-│   ├── ArticleRow.tsx          # List row with hover actions
+│   ├── ArticleRow.tsx          # List row with hover/touch actions
 │   ├── AuthForm.tsx            # Magic link form
 │   ├── DigestSection.tsx       # Takeaways + verdict
 │   ├── Header.tsx              # App header with icon
-│   ├── SettingsPanel.tsx       # Topics editor
+│   ├── PushNotificationToggle.tsx  # Push notification switch
+│   ├── ServiceWorkerRegistration.tsx  # SW registration
+│   ├── SettingsPanel.tsx       # Topics, push toggle, logout
 │   ├── Skeleton.tsx            # Loading skeletons
-│   └── TabNav.tsx              # View tabs
+│   └── TabNav.tsx              # View tabs (horizontally scrollable)
 ├── lib/
 │   ├── supabase/
 │   │   ├── client.ts
@@ -296,6 +348,16 @@ myrundown/
 │   ├── anthropic.ts            # Claude API + prompts
 │   ├── picks.ts                # Daily pick selection
 │   └── types.ts                # TypeScript types
+├── public/
+│   ├── manifest.json           # PWA manifest
+│   ├── sw.js                   # Service worker
+│   └── icons/
+│       ├── icon-192.png
+│       ├── icon-512.png
+│       ├── icon-maskable-512.png
+│       └── apple-touch-icon.png
+├── scripts/
+│   └── generate-icons.mjs      # Icon generation script
 ├── middleware.ts
 ├── vercel.json
 └── package.json
@@ -352,7 +414,40 @@ myrundown/
 - [x] Renamed to "My Rundown"
 - [x] Domain: myrundown.xyz
 
+### Phase 3 (PWA + Push)
+- [x] PWA manifest and service worker
+- [x] Offline fallback page
+- [x] PWA icons (192, 512, maskable, apple-touch)
+- [x] iOS safe area support
+- [x] Push notifications (VAPID, subscribe/unsubscribe)
+- [x] Push notification toggle in settings (switch UI)
+- [x] Push notifications in daily cron
+- [x] Test endpoint for push notifications
+- [x] Logout button in settings
+- [x] Mobile-friendly touch targets
+- [x] Horizontally scrollable tab pills
+- [x] Auth callback fixes (client-side handling)
+- [x] RLS bypass with service role for profile operations
+
 ### Not Implemented
 - [ ] Article search/filter
 - [ ] User-specific notification times (needs Vercel Pro)
 - [ ] Google OAuth (removed by choice)
+
+---
+
+## Current Status (March 2026)
+
+**Where we left off:**
+- PWA fully implemented and working
+- Push notifications implemented and tested
+- All core features complete
+
+**Known issues to watch:**
+- API routes use admin client (service role) to bypass RLS — this works but means RLS policies aren't enforced server-side
+- VAPID key encoding was tricky — ensure no extra whitespace in env vars
+
+**To test push notifications:**
+```bash
+curl -X POST "https://myrundown.xyz/api/push/test" -H "Authorization: Bearer YOUR_CRON_SECRET"
+```
