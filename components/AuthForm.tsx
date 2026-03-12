@@ -29,8 +29,13 @@ export function AuthForm() {
       } else {
         setSuccess("Check your email for the magic link!");
       }
-    } catch {
-      setError("Something went wrong");
+    } catch (err) {
+      console.error("Auth error:", err);
+      if (err instanceof Error && err.message.includes("Load failed")) {
+        setError("Unable to connect. Please check your internet connection and try again.");
+      } else {
+        setError("Something went wrong. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
