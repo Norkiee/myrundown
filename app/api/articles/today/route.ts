@@ -54,7 +54,10 @@ Summary: ${a.summary}
       verdict: d.verdict,
     }));
 
-    await adminClient.from("digests").insert(digestsToInsert);
+    // Use upsert to handle duplicates gracefully (article_id is unique)
+    await adminClient.from("digests").upsert(digestsToInsert, {
+      onConflict: "article_id",
+    });
 
     return digestResults;
   } catch (error) {
@@ -131,11 +134,12 @@ export async function GET() {
     return NextResponse.json([]);
   }
 
-  // Fetch articles
+  // Fetch articles (only unread ones for today's view)
   const { data: articles } = await adminClient
     .from("articles")
     .select("*")
-    .in("id", articleIds);
+    .in("id", articleIds)
+    .eq("read", false);
 
   if (!articles || articles.length === 0) {
     return NextResponse.json([]);
@@ -151,15 +155,27 @@ export async function GET() {
   const digestedIds = new Set(existingDigests?.map((d) => d.article_id) || []);
   const articlesNeedingDigest = articles.filter((a) => !digestedIds.has(a.id));
 
-  // Auto-generate digests in background (non-blocking)
+  // Generate digests synchronously so user gets complete data
+  let newDigests: DigestResult[] = [];
   if (articlesNeedingDigest.length > 0) {
-    generateDigests(articlesNeedingDigest, user.id, adminClient).catch(console.error);
+    newDigests = await generateDigests(articlesNeedingDigest, user.id, adminClient);
   }
 
-  // Combine articles with existing digests
+  // Combine existing + new digests
+  const allDigests = [
+    ...(existingDigests || []),
+    ...newDigests.map((d) => ({
+      article_id: d.articleId,
+      takeaways: d.takeaways,
+      why_it_matters: d.whyItMatters,
+      verdict: d.verdict,
+    })),
+  ];
+
+  // Combine articles with digests
   const articlesWithDigests: ArticleWithDigest[] = articles.map((article) => ({
     ...article,
-    digest: existingDigests?.find((d) => d.article_id === article.id) || null,
+    digest: allDigests.find((d) => d.article_id === article.id) || null,
   }));
 
   // Sort by score descending

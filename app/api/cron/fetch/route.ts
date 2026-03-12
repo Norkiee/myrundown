@@ -11,6 +11,27 @@ import {
 import { selectDailyPicks } from "@/lib/picks";
 import type { FetchedArticle, Article, DigestResult } from "@/lib/types";
 
+// Retry helper for Claude API calls
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  maxRetries: number = 2,
+  delayMs: number = 1000
+): Promise<T> {
+  let lastError: Error | null = null;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error as Error;
+      if (attempt < maxRetries) {
+        console.log(`Retry attempt ${attempt + 1}/${maxRetries} after error:`, error);
+        await new Promise(resolve => setTimeout(resolve, delayMs * (attempt + 1)));
+      }
+    }
+  }
+  throw lastError;
+}
+
 export async function GET(request: Request) {
   // Verify cron secret
   const authHeader = request.headers.get("authorization");
@@ -56,16 +77,26 @@ ${profile.topics.map((t: string, i: number) => `${i + 1}. ${t}`).join("\n")}
 
 Focus on articles published in the last 48 hours. Return 8-12 articles as JSON.`;
 
-      const response = await anthropic.messages.create({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 4000,
-        system: FETCH_SYSTEM_PROMPT,
-        messages: [{ role: "user", content: userPrompt }],
-        tools: [{ type: "web_search_20250305", name: "web_search" }],
+      const articles = await withRetry(async () => {
+        const response = await anthropic.messages.create({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 4000,
+          system: FETCH_SYSTEM_PROMPT,
+          messages: [{ role: "user", content: userPrompt }],
+          tools: [{ type: "web_search_20250305", name: "web_search" }],
+        });
+
+        const text = extractText(response);
+        const parsed = parseJsonResponse<FetchedArticle[]>(text);
+
+        if (!Array.isArray(parsed) || parsed.length === 0) {
+          throw new Error("Claude returned empty or invalid articles array");
+        }
+
+        return parsed;
       });
 
-      const text = extractText(response);
-      const articles = parseJsonResponse<FetchedArticle[]>(text);
+      console.log(`[CRON] Fetched ${articles.length} articles for user ${profile.id}`);
 
       // Get existing URLs to deduplicate
       const { data: existingArticles } = await supabase
@@ -103,11 +134,13 @@ Focus on articles published in the last 48 hours. Return 8-12 articles as JSON.`
         results.push({ userId: profile.id, added: 0 });
       }
     } catch (error) {
-      console.error(`Error fetching for user ${profile.id}:`, error);
+      const errorMsg = error instanceof Error ? error.message : "Unknown error";
+      console.error(`[CRON] Error fetching articles for user ${profile.id}:`, errorMsg);
+      console.error(`[CRON] User topics: ${profile.topics?.join(", ")}`);
       results.push({
         userId: profile.id,
         added: 0,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: errorMsg,
       });
     }
   }
@@ -195,19 +228,21 @@ Focus on articles published in the last 48 hours. Return 8-12 articles as JSON.`
       }
 
       // Generate digests using Haiku
-      const userPrompt = `Create digests for these articles based on their summaries:
+      const digestPrompt = `Create digests for these articles based on their summaries:
 
 ${articles.map((a) => `Article ID: ${a.id}\nTitle: ${a.title}\nSource: ${a.source}\nSummary: ${a.summary}\n---`).join("\n")}`;
 
-      const response = await anthropic.messages.create({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 2000,
-        system: DIGEST_SYSTEM_PROMPT,
-        messages: [{ role: "user", content: userPrompt }],
-      });
+      const digests = await withRetry(async () => {
+        const response = await anthropic.messages.create({
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 2000,
+          system: DIGEST_SYSTEM_PROMPT,
+          messages: [{ role: "user", content: digestPrompt }],
+        });
 
-      const text = extractText(response);
-      const digests = parseJsonResponse<DigestResult[]>(text);
+        const text = extractText(response);
+        return parseJsonResponse<DigestResult[]>(text);
+      });
 
       const digestsToInsert = digests.map((d) => ({
         article_id: d.articleId,
@@ -217,9 +252,10 @@ ${articles.map((a) => `Article ID: ${a.id}\nTitle: ${a.title}\nSource: ${a.sourc
         verdict: d.verdict,
       }));
 
+      // Use upsert to handle duplicates gracefully (article_id is unique)
       const { data: insertedDigests } = await supabase
         .from("digests")
-        .insert(digestsToInsert)
+        .upsert(digestsToInsert, { onConflict: "article_id" })
         .select();
 
       digestResults.push({
@@ -312,9 +348,12 @@ ${articles.map((a) => `Article ID: ${a.id}\nTitle: ${a.title}\nSource: ${a.sourc
 
   // Send push notifications to users with subscriptions
   const pushResults: { userId: string; sent: number; failed: number }[] = [];
+  let pushSkipReason: string | null = null;
 
   // Only send push notifications if VAPID keys are configured
-  if (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+  if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
+    pushSkipReason = "VAPID keys not configured";
+  } else {
     webpush.setVapidDetails(
       "mailto:noreply@myrundown.xyz",
       process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
@@ -385,5 +424,6 @@ ${articles.map((a) => `Article ID: ${a.id}\nTitle: ${a.title}\nSource: ${a.sourc
     digestResults,
     emailResults,
     pushResults,
+    pushSkipReason,
   });
 }

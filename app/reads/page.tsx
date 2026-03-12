@@ -179,14 +179,25 @@ export default function ReadsPage() {
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="1.5"
-                  className="text-text-muted"
+                  className="text-accent-green"
                 >
-                  <path d="M12 6v6l4 2" />
-                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="20 6 9 17 4 12" />
                 </svg>
               </div>
-              <p className="text-text-muted">No articles for today yet.</p>
-              <p className="text-text-faint text-sm mt-2">New articles are fetched daily at 6 AM.</p>
+              <p className="text-text-primary">Daily reads done!</p>
+              {counts.queue > 0 ? (
+                <>
+                  <p className="text-text-muted text-sm mt-2">You can read more from your queue.</p>
+                  <button
+                    onClick={() => setActiveTab("queue")}
+                    className="mt-4 px-4 py-2 bg-surface border border-border rounded-lg text-text-secondary hover:border-border-hover hover:text-text-primary transition-all text-sm"
+                  >
+                    View Queue ({counts.queue})
+                  </button>
+                </>
+              ) : (
+                <p className="text-text-muted text-sm mt-2">New articles are fetched daily at 6 AM.</p>
+              )}
             </div>
           ) : (
             <ArticleCarousel

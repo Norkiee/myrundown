@@ -22,19 +22,50 @@ export function PushNotificationToggle() {
 
     setPermission(Notification.permission);
 
-    // Check if already subscribed
-    navigator.serviceWorker.ready.then((registration) => {
-      registration.pushManager.getSubscription().then((subscription) => {
-        setSubscribed(!!subscription);
-      });
-    }).catch((err) => {
-      console.error("Service worker not ready:", err);
-    });
+    // Check if browser subscription exists AND is in the database
+    const checkSubscription = async () => {
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        const browserSub = await registration.pushManager.getSubscription();
+
+        if (!browserSub) {
+          setSubscribed(false);
+          return;
+        }
+
+        // Verify subscription exists in database
+        const res = await fetch("/api/push/subscribe");
+        if (res.ok) {
+          const { endpoints } = await res.json();
+          const existsInDb = endpoints.includes(browserSub.endpoint);
+
+          if (!existsInDb) {
+            // Orphan subscription - browser has it but DB doesn't
+            // Unsubscribe from browser to sync state
+            console.log("Cleaning up orphan push subscription");
+            await browserSub.unsubscribe();
+            setSubscribed(false);
+          } else {
+            setSubscribed(true);
+          }
+        } else {
+          // Can't verify, assume browser state is correct
+          setSubscribed(true);
+        }
+      } catch (err) {
+        console.error("Error checking subscription:", err);
+        setSubscribed(false);
+      }
+    };
+
+    checkSubscription();
   }, []);
 
   const subscribe = async () => {
     // Optimistic update - toggle instantly
     setSubscribed(true);
+
+    let browserSubscription: PushSubscription | null = null;
 
     try {
       const perm = await Notification.requestPermission();
@@ -54,7 +85,7 @@ export function PushNotificationToggle() {
         return;
       }
 
-      const subscription = await registration.pushManager.subscribe({
+      browserSubscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(vapidKey) as BufferSource,
       });
@@ -62,14 +93,24 @@ export function PushNotificationToggle() {
       const res = await fetch("/api/push/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(subscription.toJSON()),
+        body: JSON.stringify(browserSubscription.toJSON()),
       });
 
       if (!res.ok) {
+        // API failed - cleanup browser subscription to prevent orphan
+        await browserSubscription.unsubscribe();
         setSubscribed(false);
       }
     } catch (err) {
       console.error("Push subscription error:", err);
+      // Cleanup browser subscription if it was created
+      if (browserSubscription) {
+        try {
+          await browserSubscription.unsubscribe();
+        } catch (cleanupErr) {
+          console.error("Failed to cleanup subscription:", cleanupErr);
+        }
+      }
       setSubscribed(false);
     }
   };
