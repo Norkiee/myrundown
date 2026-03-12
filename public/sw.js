@@ -1,4 +1,4 @@
-const CACHE_NAME = 'myrundown-v1';
+const CACHE_NAME = 'myrundown-v2';
 const OFFLINE_URL = '/offline';
 
 // Install: cache offline page
@@ -28,8 +28,14 @@ self.addEventListener('fetch', (event) => {
   // Skip non-GET requests
   if (event.request.method !== 'GET') return;
 
-  // Skip API routes and auth
   const url = new URL(event.request.url);
+
+  // Skip external requests (Supabase, etc.)
+  if (url.origin !== self.location.origin) {
+    return;
+  }
+
+  // Skip API routes and auth
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/auth/')) {
     return;
   }

@@ -85,13 +85,12 @@ function AuthCallbackHandler() {
           return;
         }
 
-        // Check if user has articles
-        const { count } = await supabase
-          .from("articles")
-          .select("*", { count: "exact", head: true })
-          .eq("user_id", user.id);
+        // Check if user has articles (use API to bypass RLS)
+        const articlesRes = await fetch("/api/articles?view=all&limit=1");
+        const articlesData = await articlesRes.json();
+        const hasArticles = Array.isArray(articlesData) && articlesData.length > 0;
 
-        if (count === 0) {
+        if (!hasArticles) {
           router.push("/onboarding");
         } else {
           router.push("/reads");
