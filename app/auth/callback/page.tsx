@@ -7,22 +7,10 @@ import { Suspense } from "react";
 
 function AuthCallbackHandler() {
   const [status, setStatus] = useState("Signing you in...");
-  const [showPwaPrompt, setShowPwaPrompt] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Check if running in standalone mode (PWA)
-  const isStandalone = typeof window !== "undefined" &&
-    (window.matchMedia("(display-mode: standalone)").matches ||
-     (window.navigator as Navigator & { standalone?: boolean }).standalone === true);
-
   useEffect(() => {
-    // If not in PWA, show prompt to open in PWA
-    if (typeof window !== "undefined" && !isStandalone) {
-      setShowPwaPrompt(true);
-      return;
-    }
-
     const handleCallback = async () => {
       try {
         const supabase = createClient();
@@ -88,28 +76,24 @@ function AuthCallbackHandler() {
         const { data: { user } } = await supabase.auth.getUser();
 
         if (user) {
+          setStatus("Preparing your account...");
+
           // Ensure profile exists (calls server-side API that can bypass RLS)
           const profileRes = await fetch("/api/auth/ensure-profile", { method: "POST" });
-          const profileData = await profileRes.json();
 
-          if (profileData.created) {
-            // New user - go to onboarding
-            router.push("/onboarding");
+          if (!profileRes.ok) {
+            router.push("/login?error=auth_callback_failed");
             return;
           }
 
-          // Check if user has articles using the client we already have
-          const { count, error: countError } = await supabase
-            .from("articles")
-            .select("*", { count: "exact", head: true })
-            .eq("user_id", user.id);
+          const profileData = await profileRes.json();
 
-          // If query fails or no articles, go to onboarding
-          if (countError || !count || count === 0) {
-            router.push("/onboarding");
-          } else {
-            router.push("/reads");
+          if (profileData.created) {
+            router.replace("/onboarding");
+            return;
           }
+
+          router.replace("/reads");
         } else {
           setStatus("Authentication failed");
           setTimeout(() => router.push("/login?error=auth_callback_failed"), 1500);
@@ -122,60 +106,7 @@ function AuthCallbackHandler() {
     };
 
     handleCallback();
-  }, [router, searchParams, isStandalone]);
-
-  // Show prompt to open in PWA
-  if (showPwaPrompt) {
-    const currentUrl = typeof window !== "undefined" ? window.location.href : "";
-
-    const copyLink = async () => {
-      await navigator.clipboard.writeText(currentUrl);
-      setStatus("Link copied! Now open My Rundown app and paste in browser.");
-    };
-
-    return (
-      <div className="min-h-screen flex items-center justify-center px-4">
-        <div className="w-full max-w-sm text-center">
-          <div className="flex items-center justify-center gap-2 mb-6">
-            <img src="/icon.svg" alt="My Rundown" width={32} height={32} />
-            <span className="text-xl font-semibold text-text-primary">My Rundown</span>
-          </div>
-
-          <div className="bg-surface border border-border rounded-xl p-6">
-            <h2 className="text-lg font-medium text-text-primary mb-2">
-              Open in App
-            </h2>
-            <p className="text-text-secondary text-sm mb-6">
-              To complete sign in, open this link in the My Rundown app.
-            </p>
-
-            <button
-              onClick={copyLink}
-              className="w-full py-3 bg-text-primary text-background font-medium rounded-lg hover:bg-text-secondary transition-colors mb-3"
-            >
-              Copy Link
-            </button>
-
-            <p className="text-text-muted text-xs">
-              {status !== "Signing you in..." ? status : "Then paste it in the app's browser."}
-            </p>
-
-            <div className="mt-6 pt-4 border-t border-border">
-              <button
-                onClick={() => {
-                  setShowPwaPrompt(false);
-                  setStatus("Signing you in...");
-                }}
-                className="text-text-secondary text-sm hover:text-text-primary transition-colors"
-              >
-                Continue in browser instead
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  }, [router, searchParams]);
 
   return (
     <div className="min-h-screen flex items-center justify-center">
