@@ -93,6 +93,18 @@ function AuthCallbackHandler() {
             return;
           }
 
+          setStatus("Loading your reads...");
+
+          const { count, error: countError } = await supabase
+            .from("articles")
+            .select("*", { count: "exact", head: true })
+            .eq("user_id", user.id);
+
+          if (countError || !count || count === 0) {
+            router.replace("/onboarding");
+            return;
+          }
+
           router.replace("/reads");
         } else {
           setStatus("Authentication failed");
