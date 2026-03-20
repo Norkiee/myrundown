@@ -1,12 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import {
-  anthropic,
-  extractText,
-  parseJsonResponse,
-  FETCH_SYSTEM_PROMPT,
-} from "@/lib/anthropic";
-import type { FetchedArticle } from "@/lib/types";
+import { createAdminClient } from "@/lib/admin";
+import { fetchArticlesForUser } from "@/lib/article-fetch";
 
 export async function POST() {
   const supabase = await createClient();
@@ -33,67 +28,14 @@ export async function POST() {
     );
   }
 
-  const userPrompt = `Find recent, high-quality articles on these topics:
-${profile.topics.map((t: string, i: number) => `${i + 1}. ${t}`).join("\n")}
-
-Focus on articles published in the last 48 hours. Return 5-8 articles as JSON. Include detailed summaries.`;
-
   try {
-    const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 4000,
-      system: FETCH_SYSTEM_PROMPT,
-      messages: [{ role: "user", content: userPrompt }],
-      tools: [{ type: "web_search_20250305", name: "web_search" }],
+    const result = await fetchArticlesForUser({
+      userId: user.id,
+      topics: profile.topics,
+      supabase: createAdminClient(),
     });
 
-    const text = extractText(response);
-    const articles = parseJsonResponse<FetchedArticle[]>(text);
-
-    // Get existing URLs to deduplicate
-    const { data: existingArticles } = await supabase
-      .from("articles")
-      .select("url")
-      .eq("user_id", user.id);
-
-    const existingUrls = new Set(existingArticles?.map((a) => a.url) || []);
-
-    // Filter out duplicates and prepare for insert
-    const newArticles = articles
-      .filter((a) => !existingUrls.has(a.url))
-      .map((a) => ({
-        user_id: user.id,
-        title: a.title,
-        url: a.url,
-        source: a.source,
-        summary: a.summary,
-        score: Math.min(10, Math.max(1, a.score)), // Clamp score 1-10
-        topic: a.topic,
-        read: false,
-      }));
-
-    if (newArticles.length === 0) {
-      return NextResponse.json({
-        message: "No new articles found",
-        added: 0,
-      });
-    }
-
-    // Insert with on conflict do nothing
-    const { data: inserted, error } = await supabase
-      .from("articles")
-      .insert(newArticles)
-      .select();
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    return NextResponse.json({
-      message: `Added ${inserted?.length || 0} new articles`,
-      added: inserted?.length || 0,
-      articles: inserted,
-    });
+    return NextResponse.json(result);
   } catch (error) {
     console.error("Fetch articles error:", error);
     return NextResponse.json(

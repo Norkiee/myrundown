@@ -18,6 +18,7 @@ export default function OnboardingPage() {
   const [newTopic, setNewTopic] = useState("");
   const [saving, setSaving] = useState(false);
   const [fetching, setFetching] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     // Load profile to check if already onboarded
@@ -54,19 +55,41 @@ export default function OnboardingPage() {
     if (topics.length === 0) return;
 
     setSaving(true);
+    setError(null);
 
-    // Save topics
-    await fetch("/api/profile", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ topics }),
-    });
+    try {
+      const profileRes = await fetch("/api/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topics }),
+      });
 
-    // Fetch first batch of articles
-    setFetching(true);
-    await fetch("/api/articles/fetch", { method: "POST" });
+      if (!profileRes.ok) {
+        throw new Error("Failed to save topics");
+      }
 
-    router.push("/reads");
+      // For first-time users, fetch immediately instead of waiting for the 6 AM cron.
+      setFetching(true);
+
+      const fetchRes = await fetch("/api/articles/fetch", { method: "POST" });
+
+      if (!fetchRes.ok) {
+        throw new Error("Failed to fetch your first articles");
+      }
+
+      // Force today's picks to exist before entering the reads screen.
+      const todayRes = await fetch("/api/articles/today");
+
+      if (!todayRes.ok) {
+        throw new Error("Failed to prepare today's reads");
+      }
+
+      router.push("/reads");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+      setFetching(false);
+      setSaving(false);
+    }
   };
 
   return (
@@ -155,6 +178,10 @@ export default function OnboardingPage() {
           <p className="text-center text-text-muted text-sm mt-3">
             Add at least one topic to continue
           </p>
+        )}
+
+        {error && (
+          <p className="text-center text-accent-red text-sm mt-3">{error}</p>
         )}
       </div>
     </div>

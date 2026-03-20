@@ -1,71 +1,98 @@
 import { NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr";
 import webpush from "web-push";
+import { createAdminClient } from "@/lib/admin";
+
+function authorize(request: Request) {
+  const secret = process.env.CRON_SECRET;
+  const authorization = request.headers.get("authorization");
+
+  if (!secret) {
+    return true;
+  }
+
+  return authorization === `Bearer ${secret}`;
+}
+
+function configureWebPush() {
+  const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim();
+  const privateKey = process.env.VAPID_PRIVATE_KEY?.trim();
+
+  if (!publicKey || !privateKey) {
+    throw new Error("VAPID keys are not configured");
+  }
+
+  webpush.setVapidDetails("mailto:noreply@myrundown.xyz", publicKey, privateKey);
+}
 
 export async function POST(request: Request) {
-  // Verify with a simple secret (use CRON_SECRET)
-  const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!authorize(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
-    return NextResponse.json({ error: "VAPID keys not configured" }, { status: 500 });
+  try {
+    configureWebPush();
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Invalid VAPID configuration" },
+      { status: 500 }
+    );
   }
 
-  webpush.setVapidDetails(
-    "mailto:noreply@myrundown.xyz",
-    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
-    process.env.VAPID_PRIVATE_KEY
-  );
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { cookies: { getAll() { return []; }, setAll() {} } }
-  );
-
-  // Get all push subscriptions
-  const { data: subscriptions } = await supabase
+  const adminClient = createAdminClient();
+  const { data: subscriptions, error } = await adminClient
     .from("push_subscriptions")
-    .select("endpoint, p256dh, auth, user_id");
+    .select("endpoint, p256dh, auth");
 
-  if (!subscriptions || subscriptions.length === 0) {
-    return NextResponse.json({ message: "No subscriptions found", sent: 0 });
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  const payload = JSON.stringify({
+    title: "My Rundown",
+    body: "This is a test push notification.",
+    url: "/reads",
+  });
 
   let sent = 0;
-  let failed = 0;
+  const invalidEndpoints: string[] = [];
 
-  for (const sub of subscriptions) {
+  for (const subscription of subscriptions || []) {
     try {
       await webpush.sendNotification(
         {
-          endpoint: sub.endpoint,
+          endpoint: subscription.endpoint,
           keys: {
-            p256dh: sub.p256dh,
-            auth: sub.auth,
+            p256dh: subscription.p256dh,
+            auth: subscription.auth,
           },
         },
-        JSON.stringify({
-          title: "Test Notification",
-          body: "Push notifications are working!",
-          url: "/reads",
-        })
+        payload
       );
-      sent++;
-    } catch (err) {
-      console.error("Push failed:", err);
-      failed++;
-      // Remove invalid subscription
-      if ((err as { statusCode?: number }).statusCode === 410) {
-        await supabase
-          .from("push_subscriptions")
-          .delete()
-          .eq("endpoint", sub.endpoint);
+      sent += 1;
+    } catch (error) {
+      const statusCode =
+        typeof error === "object" && error && "statusCode" in error
+          ? Number(error.statusCode)
+          : undefined;
+
+      if (statusCode === 404 || statusCode === 410) {
+        invalidEndpoints.push(subscription.endpoint);
+      } else {
+        console.error("Push test send failed:", error);
       }
     }
   }
 
-  return NextResponse.json({ sent, failed, total: subscriptions.length });
+  if (invalidEndpoints.length > 0) {
+    await adminClient
+      .from("push_subscriptions")
+      .delete()
+      .in("endpoint", invalidEndpoints);
+  }
+
+  return NextResponse.json({
+    ok: true,
+    sent,
+    removed: invalidEndpoints.length,
+  });
 }
