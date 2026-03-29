@@ -88,19 +88,7 @@ function AuthCallbackHandler() {
 
           const profileData = await profileRes.json();
 
-          if (profileData.created) {
-            router.replace("/onboarding");
-            return;
-          }
-
-          setStatus("Loading your reads...");
-
-          const { count, error: countError } = await supabase
-            .from("articles")
-            .select("*", { count: "exact", head: true })
-            .eq("user_id", user.id);
-
-          if (countError || !count || count === 0) {
+          if (profileData.needsOnboarding) {
             router.replace("/onboarding");
             return;
           }

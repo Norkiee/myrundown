@@ -33,7 +33,15 @@ export async function POST() {
     .single();
 
   if (profile) {
-    return NextResponse.json({ exists: true });
+    const { count } = await adminClient
+      .from("articles")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id);
+
+    return NextResponse.json({
+      exists: true,
+      needsOnboarding: !count || count === 0,
+    });
   }
 
   // Create profile
@@ -46,5 +54,8 @@ export async function POST() {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ created: true });
+  return NextResponse.json({
+    created: true,
+    needsOnboarding: true,
+  });
 }
