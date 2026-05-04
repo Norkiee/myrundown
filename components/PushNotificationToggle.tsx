@@ -2,15 +2,37 @@
 
 import { useState, useEffect } from "react";
 
+const SUBSCRIBED_CACHE_KEY = "push_subscribed";
+
+function readCachedSubscribed(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(SUBSCRIBED_CACHE_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function writeCachedSubscribed(value: boolean) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(SUBSCRIBED_CACHE_KEY, String(value));
+  } catch {
+    // localStorage unavailable (private mode, quota) — non-fatal
+  }
+}
+
 export function PushNotificationToggle() {
   const [permission, setPermission] = useState<NotificationPermission | "loading">("loading");
-  const [subscribed, setSubscribed] = useState(false);
+  const [subscribed, setSubscribed] = useState<boolean>(readCachedSubscribed);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     const checkSubscription = async () => {
       // Check if push is supported
       if (!("Notification" in window) || !("serviceWorker" in navigator) || !("PushManager" in window)) {
         setPermission("denied");
+        setReady(true);
         return;
       }
 
@@ -18,17 +40,24 @@ export function PushNotificationToggle() {
       if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) {
         console.error("VAPID public key not configured");
         setPermission("denied");
+        setReady(true);
         return;
       }
 
       setPermission(Notification.permission);
+
+      const finalize = (value: boolean) => {
+        setSubscribed(value);
+        writeCachedSubscribed(value);
+        setReady(true);
+      };
 
       try {
         const registration = await navigator.serviceWorker.ready;
         const browserSub = await registration.pushManager.getSubscription();
 
         if (!browserSub) {
-          setSubscribed(false);
+          finalize(false);
           return;
         }
 
@@ -43,26 +72,31 @@ export function PushNotificationToggle() {
             // Unsubscribe from browser to sync state
             console.log("Cleaning up orphan push subscription");
             await browserSub.unsubscribe();
-            setSubscribed(false);
+            finalize(false);
           } else {
-            setSubscribed(true);
+            finalize(true);
           }
         } else {
           // Can't verify, assume browser state is correct
-          setSubscribed(true);
+          finalize(true);
         }
       } catch (err) {
         console.error("Error checking subscription:", err);
-        setSubscribed(false);
+        finalize(false);
       }
     };
 
     void checkSubscription();
   }, []);
 
+  const setSubscribedAndCache = (value: boolean) => {
+    setSubscribed(value);
+    writeCachedSubscribed(value);
+  };
+
   const subscribe = async () => {
     // Optimistic update - toggle instantly
-    setSubscribed(true);
+    setSubscribedAndCache(true);
 
     let browserSubscription: PushSubscription | null = null;
 
@@ -71,7 +105,7 @@ export function PushNotificationToggle() {
       setPermission(perm);
 
       if (perm !== "granted") {
-        setSubscribed(false);
+        setSubscribedAndCache(false);
         return;
       }
 
@@ -80,7 +114,7 @@ export function PushNotificationToggle() {
       const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
       if (!vapidKey) {
         console.error("VAPID key not found");
-        setSubscribed(false);
+        setSubscribedAndCache(false);
         return;
       }
 
@@ -98,7 +132,7 @@ export function PushNotificationToggle() {
       if (!res.ok) {
         // API failed - cleanup browser subscription to prevent orphan
         await browserSubscription.unsubscribe();
-        setSubscribed(false);
+        setSubscribedAndCache(false);
       }
     } catch (err) {
       console.error("Push subscription error:", err);
@@ -110,13 +144,13 @@ export function PushNotificationToggle() {
           console.error("Failed to cleanup subscription:", cleanupErr);
         }
       }
-      setSubscribed(false);
+      setSubscribedAndCache(false);
     }
   };
 
   const unsubscribe = async () => {
     // Optimistic update - toggle instantly
-    setSubscribed(false);
+    setSubscribedAndCache(false);
 
     try {
       const registration = await navigator.serviceWorker.ready;
@@ -133,7 +167,7 @@ export function PushNotificationToggle() {
       }
     } catch (err) {
       console.error("Push unsubscribe error:", err);
-      setSubscribed(true); // Revert on error
+      setSubscribedAndCache(true); // Revert on error
     }
   };
 
@@ -149,7 +183,7 @@ export function PushNotificationToggle() {
     );
   }
 
-  const isDisabled = permission === "loading";
+  const isDisabled = permission === "loading" || !ready;
 
   return (
     <div className="flex items-center justify-between py-3">
