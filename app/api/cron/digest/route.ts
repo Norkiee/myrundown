@@ -7,7 +7,7 @@ import {
   parseJsonResponse,
   DIGEST_SYSTEM_PROMPT,
 } from "@/lib/anthropic";
-import { DAILY_ARTICLE_COUNT, DIGEST_MAX_TOKENS } from "@/lib/content-limits";
+import { DAILY_PICK_COUNT, DIGEST_MAX_TOKENS } from "@/lib/content-limits";
 import { selectDailyPicks } from "@/lib/picks";
 import type { Article, DigestResult } from "@/lib/types";
 
@@ -76,7 +76,7 @@ export async function GET(request: Request) {
 
         const picks = selectDailyPicks(
           unreadArticles as Article[],
-          DAILY_ARTICLE_COUNT,
+          DAILY_PICK_COUNT,
           today
         );
 

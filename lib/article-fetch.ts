@@ -6,7 +6,7 @@ import {
   parseJsonResponse,
   FETCH_SYSTEM_PROMPT,
 } from "@/lib/anthropic";
-import { DAILY_ARTICLE_COUNT } from "@/lib/content-limits";
+import { DAILY_FETCH_COUNT } from "@/lib/content-limits";
 import type { FetchedArticle } from "@/lib/types";
 
 interface FetchArticlesForUserInput {
@@ -29,7 +29,7 @@ export async function fetchArticlesForUser({
   const userPrompt = `Find recent, high-quality articles on these topics:
 ${topics.map((topic, index) => `${index + 1}. ${topic}`).join("\n")}
 
-Focus on articles published in the last 48 hours. Use at most 2 web searches total. Return exactly ${DAILY_ARTICLE_COUNT} articles as JSON, including takeaways, whyItMatters, and verdict for each.`;
+Focus on articles published in the last 48 hours. Use at most 2 web searches total. Return exactly ${DAILY_FETCH_COUNT} articles as JSON, including takeaways, whyItMatters, and verdict for each.`;
 
   const response = await anthropic.messages.create({
     model: CHEAP_MODEL,
@@ -55,7 +55,7 @@ Focus on articles published in the last 48 hours. Use at most 2 web searches tot
 
   const candidates = articles
     .filter((article) => article.url && !existingUrls.has(article.url))
-    .slice(0, DAILY_ARTICLE_COUNT);
+    .slice(0, DAILY_FETCH_COUNT);
 
   if (!candidates.length) {
     return { added: 0, articles: [], digestsAdded: 0, message: "No new articles found" };

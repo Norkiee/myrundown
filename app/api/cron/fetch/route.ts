@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import webpush from "web-push";
 import { createAdminClient } from "@/lib/admin";
 import { fetchArticlesForUser } from "@/lib/article-fetch";
-import { DAILY_ARTICLE_COUNT } from "@/lib/content-limits";
+import { DAILY_PICK_COUNT } from "@/lib/content-limits";
 import { selectDailyPicks } from "@/lib/picks";
 import type { Article } from "@/lib/types";
 
@@ -87,7 +87,7 @@ function buildDailyEmailHtml(articles: DailyPickArticle[]) {
   return `
     <div style="font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 640px; margin: 0 auto; padding: 24px; background: #080808; color: #f4f4f4;">
       <h1 style="margin: 0 0 8px; font-size: 28px; line-height: 1.15;">Your Rundown</h1>
-      <p style="margin: 0 0 24px; color: #a3a3a3;">Today&apos;s 3 curated reads are ready.</p>
+      <p style="margin: 0 0 24px; color: #a3a3a3;">Today&apos;s ${articles.length} curated read${articles.length === 1 ? "" : "s"} ${articles.length === 1 ? "is" : "are"} ready.</p>
       ${articles
         .map(
           (article) => `
@@ -316,7 +316,7 @@ export async function GET(request: Request) {
       const articleIds = await ensureDailyPicks(
         adminClient,
         profile.id,
-        DAILY_ARTICLE_COUNT,
+        DAILY_PICK_COUNT,
         today
       );
 
