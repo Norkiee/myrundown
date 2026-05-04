@@ -2,13 +2,21 @@ import { NextResponse } from "next/server";
 import webpush from "web-push";
 import { createAdminClient } from "@/lib/admin";
 import { fetchArticlesForUser } from "@/lib/article-fetch";
+import { DAILY_ARTICLE_COUNT } from "@/lib/content-limits";
 import { selectDailyPicks } from "@/lib/picks";
 import type { Article } from "@/lib/types";
 
 interface ProfileRow {
   id: string;
+  email: string;
   topics: string[] | null;
-  daily_pick_count: number | null;
+}
+
+interface DailyPickArticle {
+  title: string;
+  url: string;
+  source: string | null;
+  summary: string | null;
 }
 
 function authorizeCron(request: Request) {
@@ -31,6 +39,113 @@ function configureWebPush() {
 
   webpush.setVapidDetails("mailto:noreply@myrundown.xyz", publicKey, privateKey);
   return true;
+}
+
+function isEmailEnabled() {
+  return Boolean(process.env.RESEND_API_KEY?.trim());
+}
+
+function escapeHtml(value: string | null | undefined) {
+  return (value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+async function getDailyPickArticles(
+  adminClient: ReturnType<typeof createAdminClient>,
+  userId: string,
+  today: string
+) {
+  const { data, error } = await adminClient
+    .from("daily_picks")
+    .select(`
+      articles (
+        title,
+        url,
+        source,
+        summary
+      )
+    `)
+    .eq("user_id", userId)
+    .eq("pick_date", today);
+
+  if (error) {
+    throw error;
+  }
+
+  return (data || [])
+    .map((pick) => pick.articles)
+    .filter(Boolean) as unknown as DailyPickArticle[];
+}
+
+function buildDailyEmailHtml(articles: DailyPickArticle[]) {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://myrundown.xyz";
+
+  return `
+    <div style="font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 640px; margin: 0 auto; padding: 24px; background: #080808; color: #f4f4f4;">
+      <h1 style="margin: 0 0 8px; font-size: 28px; line-height: 1.15;">Your Rundown</h1>
+      <p style="margin: 0 0 24px; color: #a3a3a3;">Today&apos;s 3 curated reads are ready.</p>
+      ${articles
+        .map(
+          (article) => `
+            <div style="padding: 18px 0; border-top: 1px solid #2a2a2a;">
+              <h2 style="margin: 0 0 8px; font-size: 18px; line-height: 1.35;">
+                <a href="${escapeHtml(article.url)}" style="color: #f4f4f4; text-decoration: none;">${escapeHtml(article.title)}</a>
+              </h2>
+              <p style="margin: 0 0 10px; color: #8a8a8a; font-size: 13px;">${escapeHtml(article.source)}</p>
+              <p style="margin: 0; color: #c7c7c7; font-size: 14px; line-height: 1.55;">${escapeHtml(article.summary)}</p>
+            </div>`
+        )
+        .join("")}
+      <div style="padding-top: 24px; border-top: 1px solid #2a2a2a;">
+        <a href="${escapeHtml(appUrl)}/reads" style="display: inline-block; padding: 11px 16px; background: #f4f4f4; color: #080808; border-radius: 8px; font-weight: 600; text-decoration: none;">Open My Rundown</a>
+      </div>
+    </div>
+  `;
+}
+
+async function sendEmailForUser(
+  adminClient: ReturnType<typeof createAdminClient>,
+  userId: string,
+  email: string,
+  today: string
+) {
+  if (!isEmailEnabled()) {
+    return { sent: false, skipped: true };
+  }
+
+  const articles = await getDailyPickArticles(adminClient, userId, today);
+
+  if (!articles.length) {
+    return { sent: false, skipped: true };
+  }
+
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+    },
+    body: JSON.stringify({
+      from: process.env.RESEND_FROM_EMAIL || "My Rundown <noreply@myrundown.xyz>",
+      to: email,
+      subject: "Your Rundown is ready",
+      html: buildDailyEmailHtml(articles),
+    }),
+  });
+
+  if (!response.ok) {
+    return {
+      sent: false,
+      skipped: false,
+      error: await response.text(),
+    };
+  }
+
+  return { sent: true, skipped: false };
 }
 
 async function ensureDailyPicks(
@@ -169,7 +284,7 @@ export async function GET(request: Request) {
 
   const { data: profiles, error } = await adminClient
     .from("profiles")
-    .select("id, topics, daily_pick_count")
+    .select("id, email, topics")
     .order("created_at", { ascending: true });
 
   if (error) {
@@ -180,15 +295,17 @@ export async function GET(request: Request) {
     userId: string;
     added: number;
     picks: number;
+    emailSent: boolean;
+    emailSkipped: boolean;
     pushesSent: number;
     invalidPushSubscriptionsRemoved: number;
     error?: string;
+    emailError?: string;
   }> = [];
 
   for (const profile of (profiles || []) as ProfileRow[]) {
     try {
       const topics = profile.topics || [];
-      const pickCount = profile.daily_pick_count || 2;
 
       const fetchResult = await fetchArticlesForUser({
         userId: profile.id,
@@ -199,7 +316,14 @@ export async function GET(request: Request) {
       const articleIds = await ensureDailyPicks(
         adminClient,
         profile.id,
-        pickCount,
+        DAILY_ARTICLE_COUNT,
+        today
+      );
+
+      const emailResult = await sendEmailForUser(
+        adminClient,
+        profile.id,
+        profile.email,
         today
       );
 
@@ -212,8 +336,11 @@ export async function GET(request: Request) {
         userId: profile.id,
         added: fetchResult.added,
         picks: articleIds.length,
+        emailSent: emailResult.sent,
+        emailSkipped: emailResult.skipped,
         pushesSent: pushResult.sent,
         invalidPushSubscriptionsRemoved: pushResult.removed,
+        emailError: emailResult.error,
       });
     } catch (error) {
       console.error(`Cron fetch failed for user ${profile.id}:`, error);
@@ -221,6 +348,8 @@ export async function GET(request: Request) {
         userId: profile.id,
         added: 0,
         picks: 0,
+        emailSent: false,
+        emailSkipped: true,
         pushesSent: 0,
         invalidPushSubscriptionsRemoved: 0,
         error: error instanceof Error ? error.message : "Unknown error",
@@ -232,6 +361,7 @@ export async function GET(request: Request) {
     ok: true,
     processedUsers: results.length,
     results,
+    emailEnabled: isEmailEnabled(),
     pushEnabled,
   });
 }

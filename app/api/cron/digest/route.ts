@@ -2,10 +2,12 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import {
   anthropic,
+  CHEAP_MODEL,
   extractText,
   parseJsonResponse,
   DIGEST_SYSTEM_PROMPT,
 } from "@/lib/anthropic";
+import { DAILY_ARTICLE_COUNT, DIGEST_MAX_TOKENS } from "@/lib/content-limits";
 import { selectDailyPicks } from "@/lib/picks";
 import type { Article, DigestResult } from "@/lib/types";
 
@@ -35,7 +37,7 @@ export async function GET(request: Request) {
   // Get all users
   const { data: profiles, error: profilesError } = await supabase
     .from("profiles")
-    .select("id, daily_pick_count");
+    .select("id");
 
   if (profilesError) {
     console.error("Error fetching profiles:", profilesError);
@@ -74,7 +76,7 @@ export async function GET(request: Request) {
 
         const picks = selectDailyPicks(
           unreadArticles as Article[],
-          profile.daily_pick_count || 2,
+          DAILY_ARTICLE_COUNT,
           today
         );
 
@@ -135,11 +137,10 @@ export async function GET(request: Request) {
 ${articles.map((a) => `- ID: ${a.id}\n  Title: ${a.title}\n  Source: ${a.source}\n  URL: ${a.url}\n  Summary: ${a.summary}`).join("\n\n")}`;
 
       const response = await anthropic.messages.create({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 4000,
+        model: CHEAP_MODEL,
+        max_tokens: DIGEST_MAX_TOKENS,
         system: DIGEST_SYSTEM_PROMPT,
         messages: [{ role: "user", content: userPrompt }],
-        tools: [{ type: "web_search_20250305", name: "web_search" }],
       });
 
       const text = extractText(response);

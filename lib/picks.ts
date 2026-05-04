@@ -10,7 +10,7 @@ function seededRandom(seed: string): () => number {
 
 export function selectDailyPicks(
   unreadArticles: Article[],
-  count: number = 2,
+  count: number = 3,
   dateStr?: string
 ): Article[] {
   if (unreadArticles.length === 0) return [];

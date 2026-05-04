@@ -36,7 +36,7 @@ Users sign up via magic link, define their interests, and the system handles the
 
 ### Article Fetching (Automated)
 - Runs daily at 6 AM via Vercel cron
-- Uses Claude Sonnet with web search to find 5-8 articles per user
+- Uses Claude Haiku with web search to find exactly 3 articles per user
 - Scores articles 1-10 based on relevance and quality
 - Deduplicates by URL
 
@@ -127,7 +127,7 @@ create table profiles (
     'startup fundraising and growth',
     'economics and monetary policy'
   ],
-  daily_pick_count int default 2,
+  daily_pick_count int default 3,
   notify_time text default '08:00',  -- kept for future use
   onboarded_at timestamptz,
   created_at timestamptz default now(),

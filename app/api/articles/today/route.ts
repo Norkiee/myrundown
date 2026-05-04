@@ -4,10 +4,12 @@ import { createServerClient } from "@supabase/ssr";
 import { selectDailyPicks } from "@/lib/picks";
 import {
   anthropic,
+  CHEAP_MODEL,
   extractText,
   parseJsonResponse,
   DIGEST_SYSTEM_PROMPT,
 } from "@/lib/anthropic";
+import { DAILY_ARTICLE_COUNT, DIGEST_MAX_TOKENS } from "@/lib/content-limits";
 import type { Article, ArticleWithDigest, DigestResult } from "@/lib/types";
 
 function getAdminClient() {
@@ -37,8 +39,8 @@ Summary: ${a.summary}
 
   try {
     const response = await anthropic.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 2000,
+      model: CHEAP_MODEL,
+      max_tokens: DIGEST_MAX_TOKENS,
       system: DIGEST_SYSTEM_PROMPT,
       messages: [{ role: "user", content: userPrompt }],
     });
@@ -79,14 +81,6 @@ export async function GET() {
 
   const adminClient = getAdminClient();
 
-  // Get user's daily pick count preference
-  const { data: profile } = await adminClient
-    .from("profiles")
-    .select("daily_pick_count")
-    .eq("id", user.id)
-    .single();
-
-  const pickCount = profile?.daily_pick_count || 2;
   const today = new Date().toISOString().split("T")[0];
 
   // Check if picks already exist for today
@@ -114,7 +108,7 @@ export async function GET() {
 
     const picks = selectDailyPicks(
       unreadArticles as Article[],
-      pickCount,
+      DAILY_ARTICLE_COUNT,
       today
     );
     articleIds = picks.map((a) => a.id);

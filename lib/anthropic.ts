@@ -4,6 +4,8 @@ export const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY!,
 });
 
+export const CHEAP_MODEL = "claude-haiku-4-5-20251001";
+
 // Helper to extract text from Claude response
 export function extractText(response: Anthropic.Message): string {
   return response.content
@@ -54,7 +56,7 @@ For each article found, return a JSON array of objects with these fields:
 - topic: Which user topic this matches
 
 Return ONLY valid JSON. No markdown, no backticks, no preamble. Just the JSON array.
-Find 5-8 articles total, prioritizing:
+Find exactly 3 articles total, prioritizing:
 1. Recency (last 48 hours preferred)
 2. Quality of insight (not clickbait)
 3. Diversity across the requested topics
