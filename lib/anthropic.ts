@@ -47,6 +47,8 @@ export function parseJsonResponse<T>(text: string): T {
 
 export const FETCH_SYSTEM_PROMPT = `You are an article curation agent. Given a list of topics the user is interested in, search the web for the most interesting, recent, and high-quality articles, blog posts, and Twitter/X threads on those topics.
 
+Use AT MOST 2 web searches total across all topics. Plan your queries to cover multiple topics per search.
+
 For each article found, return a JSON array of objects with these fields:
 - title: The article title
 - url: The URL
@@ -54,6 +56,9 @@ For each article found, return a JSON array of objects with these fields:
 - summary: A 2-3 sentence summary of the key insight (detailed enough for digest)
 - score: A relevance/quality score from 1-10
 - topic: Which user topic this matches
+- takeaways: Array of exactly 3 short bullet points capturing the main points
+- whyItMatters: One sentence on why this is relevant or important to the reader
+- verdict: "Must Read" if worth reading in full, or "Digest Enough" if the summary covers the essentials
 
 Return ONLY valid JSON. No markdown, no backticks, no preamble. Just the JSON array.
 Find exactly 3 articles total, prioritizing:

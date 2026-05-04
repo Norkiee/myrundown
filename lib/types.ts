@@ -52,6 +52,9 @@ export interface FetchedArticle {
   summary: string;
   score: number;
   topic: string;
+  takeaways?: string[];
+  whyItMatters?: string;
+  verdict?: "Must Read" | "Digest Enough";
 }
 
 export interface DigestResult {
