@@ -66,6 +66,8 @@ export async function PATCH(request: Request) {
   const updates: Record<string, unknown> = {};
 
   if (body.topics !== undefined) updates.topics = body.topics;
+  if (body.completeOnboarding === true)
+    updates.onboarded_at = new Date().toISOString();
   if (body.displayName !== undefined) updates.display_name = body.displayName;
   if (body.dailyPickCount !== undefined)
     updates.daily_pick_count = body.dailyPickCount;

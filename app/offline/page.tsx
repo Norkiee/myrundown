@@ -23,7 +23,7 @@ export default function OfflinePage() {
             <line x1="12" y1="20" x2="12.01" y2="20" />
           </svg>
         </div>
-        <h1 className="text-xl font-semibold text-text-primary mb-2">You're offline</h1>
+        <h1 className="text-xl font-semibold text-text-primary mb-2">You&apos;re offline</h1>
         <p className="text-text-muted mb-6">Check your connection and try again.</p>
         <button
           onClick={() => window.location.reload()}

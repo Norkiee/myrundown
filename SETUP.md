@@ -47,8 +47,26 @@ CRON_SECRET=your-random-secret
    - handle_new_user trigger
 4. Go to Authentication > URL Configuration
    - Set Site URL to `http://localhost:3000` (dev) or your production URL
-   - Add redirect URLs: `http://localhost:3000/api/auth/callback`
+   - Add redirect URLs: `http://localhost:3000/auth/callback`, `https://your-domain.com/auth/callback`
+   - Keep `/api/auth/callback` only as a legacy fallback if you still have old magic links in circulation
 5. Copy project URL and anon key from Settings > API
+
+### Magic Link Email Template
+
+Use `{{ .RedirectTo }}` for the link target. `{{ .SiteURL }}` always uses the Supabase project Site URL, which can send production users back to localhost if the Site URL is still set to local development.
+
+```html
+<a href="{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=magiclink">
+  Sign in to My Rundown
+</a>
+```
+
+For existing databases, add the onboarding marker once:
+
+```sql
+alter table profiles
+add column if not exists onboarded_at timestamptz;
+```
 
 ## Tailwind Config
 
@@ -204,6 +222,7 @@ export interface Profile {
   display_name: string | null;
   topics: string[];
   daily_pick_count: number;
+  onboarded_at: string | null;
   created_at: string;
   updated_at: string;
 }

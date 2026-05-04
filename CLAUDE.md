@@ -129,6 +129,7 @@ create table profiles (
   ],
   daily_pick_count int default 2,
   notify_time text default '08:00',  -- kept for future use
+  onboarded_at timestamptz,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );

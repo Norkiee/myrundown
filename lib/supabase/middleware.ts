@@ -57,8 +57,14 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (isAuthRoute && user) {
-    // Redirect to /reads without preserving error params
-    return NextResponse.redirect(new URL("/reads", request.url));
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("onboarded_at")
+      .eq("id", user.id)
+      .single();
+
+    const pathname = profile?.onboarded_at ? "/reads" : "/onboarding";
+    return NextResponse.redirect(new URL(pathname, request.url));
   }
 
   return supabaseResponse;

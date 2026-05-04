@@ -7,23 +7,22 @@ export function PushNotificationToggle() {
   const [subscribed, setSubscribed] = useState(false);
 
   useEffect(() => {
-    // Check if push is supported
-    if (!("Notification" in window) || !("serviceWorker" in navigator) || !("PushManager" in window)) {
-      setPermission("denied");
-      return;
-    }
-
-    // Check if VAPID key is available
-    if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) {
-      console.error("VAPID public key not configured");
-      setPermission("denied");
-      return;
-    }
-
-    setPermission(Notification.permission);
-
-    // Check if browser subscription exists AND is in the database
     const checkSubscription = async () => {
+      // Check if push is supported
+      if (!("Notification" in window) || !("serviceWorker" in navigator) || !("PushManager" in window)) {
+        setPermission("denied");
+        return;
+      }
+
+      // Check if VAPID key is available
+      if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) {
+        console.error("VAPID public key not configured");
+        setPermission("denied");
+        return;
+      }
+
+      setPermission(Notification.permission);
+
       try {
         const registration = await navigator.serviceWorker.ready;
         const browserSub = await registration.pushManager.getSubscription();
@@ -58,7 +57,7 @@ export function PushNotificationToggle() {
       }
     };
 
-    checkSubscription();
+    void checkSubscription();
   }, []);
 
   const subscribe = async () => {

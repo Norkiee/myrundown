@@ -28,26 +28,21 @@ export async function POST() {
   // Check if profile exists using admin client
   const { data: profile } = await adminClient
     .from("profiles")
-    .select("id")
+    .select("id, onboarded_at")
     .eq("id", user.id)
     .single();
 
   if (profile) {
-    const { count } = await adminClient
-      .from("articles")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", user.id);
-
     return NextResponse.json({
       exists: true,
-      needsOnboarding: !count || count === 0,
+      needsOnboarding: !profile.onboarded_at,
     });
   }
 
   // Create profile
   const { error } = await adminClient
     .from("profiles")
-    .insert({ id: user.id, email: user.email });
+    .insert({ id: user.id, email: user.email, onboarded_at: null });
 
   if (error) {
     console.error("Profile creation error:", error);

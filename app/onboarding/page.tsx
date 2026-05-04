@@ -61,7 +61,7 @@ export default function OnboardingPage() {
       const profileRes = await fetch("/api/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topics }),
+        body: JSON.stringify({ topics, completeOnboarding: true }),
       });
 
       if (!profileRes.ok) {
