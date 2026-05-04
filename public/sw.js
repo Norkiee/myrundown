@@ -1,4 +1,4 @@
-const CACHE_NAME = 'myrundown-v2';
+const CACHE_NAME = 'myrundown-v3';
 const OFFLINE_URL = '/offline';
 
 // Install: cache offline page
@@ -55,7 +55,7 @@ self.addEventListener('fetch', (event) => {
 // Push notification handler
 self.addEventListener('push', (event) => {
   const data = event.data?.json() ?? {};
-  const title = data.title || 'My Rundown';
+  const title = data.title || 'Rundown';
   const options = {
     body: data.body || 'Your daily reads are ready!',
     icon: '/icons/icon-192.png',

@@ -48,7 +48,7 @@ export async function POST(request: Request) {
   }
 
   const payload = JSON.stringify({
-    title: "My Rundown",
+    title: "Rundown",
     body: "This is a test push notification.",
     url: "/reads",
   });

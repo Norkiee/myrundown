@@ -225,7 +225,7 @@ async function sendPushForUser(
   }
 
   const payload = JSON.stringify({
-    title: "My Rundown",
+    title: "Rundown",
     body:
       pickCount === 1
         ? "Your daily read is ready."
