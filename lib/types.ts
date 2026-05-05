@@ -63,3 +63,9 @@ export interface DigestResult {
   whyItMatters: string;
   verdict: "Must Read" | "Digest Enough";
 }
+
+export interface TopicPoolEntry {
+  normalized: string;
+  display: string;
+  count: number;
+}
