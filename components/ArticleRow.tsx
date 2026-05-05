@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Article } from "@/lib/types";
 
 interface ArticleRowProps {
@@ -9,6 +9,8 @@ interface ArticleRowProps {
   onDelete: (id: string) => void;
   index?: number;
 }
+
+const LONG_PRESS_MS = 500;
 
 function getDomain(url: string): string {
   try {
@@ -36,23 +38,77 @@ function formatDate(dateStr: string): string {
 
 export function ArticleRow({ article, onToggleRead, onDelete, index = 0 }: ArticleRowProps) {
   const [hovering, setHovering] = useState(false);
+  const [pressed, setPressed] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const rowRef = useRef<HTMLDivElement>(null);
 
   const initial = (article.source || getDomain(article.url))[0].toUpperCase();
+  const showActions = hovering || pressed;
+
+  const cancelLongPress = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+
+  const handleTouchStart = () => {
+    cancelLongPress();
+    longPressTimer.current = setTimeout(() => {
+      setPressed(true);
+      longPressTimer.current = null;
+    }, LONG_PRESS_MS);
+  };
+
+  // Auto-dismiss on outside tap
+  useEffect(() => {
+    if (!pressed) return;
+    const dismiss = (e: TouchEvent | MouseEvent) => {
+      if (rowRef.current && !rowRef.current.contains(e.target as Node)) {
+        setPressed(false);
+      }
+    };
+    document.addEventListener("touchstart", dismiss);
+    document.addEventListener("mousedown", dismiss);
+    return () => {
+      document.removeEventListener("touchstart", dismiss);
+      document.removeEventListener("mousedown", dismiss);
+    };
+  }, [pressed]);
+
+  // Cleanup any pending timer on unmount
+  useEffect(() => {
+    return cancelLongPress;
+  }, []);
 
   const handleDelete = () => {
+    setPressed(false);
     setIsRemoving(true);
     setTimeout(() => onDelete(article.id), 200);
   };
 
+  const handleToggle = () => {
+    setPressed(false);
+    onToggleRead(article.id, !article.read);
+  };
+
   return (
     <div
-      className={`flex items-center gap-3 py-3 px-2 -mx-2 rounded-lg transition-all duration-200 ${
+      ref={rowRef}
+      className={`flex items-center gap-3 py-3 px-2 -mx-2 rounded-lg transition-all duration-200 select-none ${
         article.read ? "opacity-35" : ""
-      } ${hovering ? "bg-surface" : ""} ${isRemoving ? "opacity-0 translate-x-4" : ""}`}
-      style={{ animationDelay: `${index * 50}ms` }}
+      } ${hovering || pressed ? "bg-surface" : ""} ${isRemoving ? "opacity-0 translate-x-4" : ""}`}
+      style={{ animationDelay: `${index * 50}ms`, WebkitTouchCallout: "none" }}
       onMouseEnter={() => setHovering(true)}
       onMouseLeave={() => setHovering(false)}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={cancelLongPress}
+      onTouchMove={cancelLongPress}
+      onTouchCancel={cancelLongPress}
+      onContextMenu={(e) => {
+        if (pressed) e.preventDefault();
+      }}
     >
       {/* Favicon initial */}
       <div className={`w-8 h-8 rounded-full bg-surface border border-border flex items-center justify-center text-sm font-medium text-text-muted shrink-0 transition-all duration-200 ${
@@ -79,9 +135,15 @@ export function ArticleRow({ article, onToggleRead, onDelete, index = 0 }: Artic
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-1 shrink-0">
+      <div
+        className={`flex items-center gap-1 shrink-0 transition-all duration-200 ${
+          showActions
+            ? "opacity-100 translate-x-0 pointer-events-auto"
+            : "opacity-0 translate-x-2 pointer-events-none"
+        }`}
+      >
         <button
-          onClick={() => onToggleRead(article.id, !article.read)}
+          onClick={handleToggle}
           className={`p-2.5 rounded transition-all duration-200 btn-press ${
             article.read
               ? "text-accent-green hover:bg-accent-green-bg"
