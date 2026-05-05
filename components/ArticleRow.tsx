@@ -129,60 +129,67 @@ export function ArticleRow({ article, onToggleRead, onDelete, index = 0 }: Artic
         >
           {article.title}
         </a>
-        <span className="text-xs text-text-muted">
-          {getDomain(article.url)} · {formatDate(article.saved_at)}
-        </span>
+        <span className="text-xs text-text-muted">{getDomain(article.url)}</span>
       </div>
 
-      {/* Actions */}
-      <div
-        className={`flex items-center gap-1 shrink-0 transition-all duration-200 ${
-          showActions
-            ? "opacity-100 translate-x-0 pointer-events-auto"
-            : "opacity-0 translate-x-2 pointer-events-none"
-        }`}
-      >
-        <button
-          onClick={handleToggle}
-          className={`p-2.5 rounded transition-all duration-200 btn-press ${
-            article.read
-              ? "text-accent-green hover:bg-accent-green-bg"
-              : "text-text-muted hover:bg-border hover:text-accent-green"
+      {/* Date / Actions — same slot, swap on hover or long-press */}
+      <div className="relative shrink-0 min-w-[80px] h-[38px] flex items-center justify-end">
+        <span
+          className={`text-xs text-text-muted text-right transition-opacity duration-200 ${
+            showActions ? "opacity-0" : "opacity-100"
           }`}
-          title={article.read ? "Mark unread" : "Mark read"}
-          aria-label={article.read ? "Mark unread" : "Mark read"}
         >
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            className="transition-transform duration-200 hover:scale-110"
-          >
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-        </button>
-        <button
-          onClick={handleDelete}
-          className="p-2.5 rounded text-text-muted hover:bg-accent-red-bg hover:text-accent-red transition-all duration-200 btn-press"
-          title="Remove"
-          aria-label="Remove"
+          {formatDate(article.saved_at)}
+        </span>
+        <div
+          className={`absolute inset-0 flex items-center justify-end gap-1 transition-all duration-200 ${
+            showActions
+              ? "opacity-100 translate-x-0 pointer-events-auto"
+              : "opacity-0 translate-x-2 pointer-events-none"
+          }`}
         >
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            className="transition-transform duration-200 hover:scale-110"
+          <button
+            onClick={handleToggle}
+            className={`p-2.5 rounded transition-all duration-200 btn-press ${
+              article.read
+                ? "text-accent-green hover:bg-accent-green-bg"
+                : "text-text-muted hover:bg-border hover:text-accent-green"
+            }`}
+            title={article.read ? "Mark unread" : "Mark read"}
+            aria-label={article.read ? "Mark unread" : "Mark read"}
           >
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-        </button>
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              className="transition-transform duration-200 hover:scale-110"
+            >
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </button>
+          <button
+            onClick={handleDelete}
+            className="p-2.5 rounded text-text-muted hover:bg-accent-red-bg hover:text-accent-red transition-all duration-200 btn-press"
+            title="Remove"
+            aria-label="Remove"
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              className="transition-transform duration-200 hover:scale-110"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
   );
