@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, KeyboardEvent } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types";
 import { PushNotificationToggle } from "./PushNotificationToggle";
+import { TopicInput } from "./TopicInput";
 
 interface SettingsPanelProps {
   profile: Profile;
@@ -18,11 +19,9 @@ export function SettingsPanel({
   onCancel,
 }: SettingsPanelProps) {
   const [topics, setTopics] = useState<string[]>(profile.topics);
-  const [inputValue, setInputValue] = useState("");
   const [saving, setSaving] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
-  const [newTopicIndex, setNewTopicIndex] = useState<number | null>(null);
   const router = useRouter();
 
   // Check if topics have changed
@@ -33,44 +32,6 @@ export function SettingsPanel({
     const supabase = createClient();
     await supabase.auth.signOut();
     router.push("/login");
-  };
-
-  const addTopic = (value: string) => {
-    const trimmed = value.trim();
-    if (trimmed && !topics.includes(trimmed)) {
-      setTopics([...topics, trimmed]);
-      setNewTopicIndex(topics.length);
-      setTimeout(() => setNewTopicIndex(null), 300);
-    }
-    setInputValue("");
-  };
-
-  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" || e.key === ",") {
-      e.preventDefault();
-      addTopic(inputValue);
-    } else if (e.key === "Backspace" && inputValue === "" && topics.length > 0) {
-      setTopics(topics.slice(0, -1));
-    }
-  };
-
-  const handleInputChange = (value: string) => {
-    if (value.includes(",")) {
-      const parts = value.split(",");
-      parts.forEach((part, i) => {
-        if (i < parts.length - 1) {
-          addTopic(part);
-        } else {
-          setInputValue(part);
-        }
-      });
-    } else {
-      setInputValue(value);
-    }
-  };
-
-  const removeTopic = (index: number) => {
-    setTopics(topics.filter((_, i) => i !== index));
   };
 
   const handleSave = async () => {
@@ -111,46 +72,11 @@ export function SettingsPanel({
         Press Enter or comma to add a topic.
       </p>
 
-      <div className="min-h-[100px] p-3 bg-background border border-border rounded-lg focus-within:border-border-hover transition-all duration-200">
-        <div className="flex flex-wrap gap-2 mb-2">
-          {topics.map((topic, index) => (
-            <span
-              key={`${topic}-${index}`}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface border border-border rounded-full text-sm text-text-primary transition-all duration-200 hover:border-border-hover group ${
-                index === newTopicIndex ? "animate-scale-in" : ""
-              }`}
-            >
-              {topic}
-              <button
-                onClick={() => removeTopic(index)}
-                className="w-4 h-4 flex items-center justify-center rounded-full hover:bg-accent-red-bg transition-all duration-200 text-text-muted hover:text-accent-red btn-press"
-              >
-                <svg
-                  width="10"
-                  height="10"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  className="transition-transform duration-200 group-hover:scale-110"
-                >
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
-            </span>
-          ))}
-        </div>
-        <input
-          type="text"
-          value={inputValue}
-          onChange={(e) => handleInputChange(e.target.value)}
-          onKeyDown={handleKeyDown}
-          onBlur={() => inputValue && addTopic(inputValue)}
-          placeholder={topics.length === 0 ? "e.g., AI agents, indie hacking, product design" : "Add another topic..."}
-          className="w-full bg-transparent text-text-primary placeholder:text-text-faint focus:outline-none text-sm"
-        />
-      </div>
+      <TopicInput
+        topics={topics}
+        onChange={setTopics}
+        placeholder={topics.length === 0 ? "e.g., AI agents, indie hacking, product design" : "Add another topic..."}
+      />
 
 
       {/* Notifications */}
