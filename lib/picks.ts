@@ -15,12 +15,32 @@ export function selectDailyPicks(
 ): Article[] {
   if (unreadArticles.length === 0) return [];
 
-  // Sort by score descending, take top candidates
-  const sorted = [...unreadArticles].sort((a, b) => b.score - a.score);
-  const candidates = sorted.slice(0, Math.min(count * 3, sorted.length));
+  const seed = dateStr || new Date().toISOString().split("T")[0]; // "2026-03-08"
+
+  const fresh: Article[] = [];
+  const older: Article[] = [];
+  for (const article of unreadArticles) {
+    if (typeof article.saved_at === "string" && article.saved_at.startsWith(seed)) {
+      fresh.push(article);
+    } else {
+      older.push(article);
+    }
+  }
+
+  fresh.sort((a, b) => b.score - a.score);
+  older.sort((a, b) => b.score - a.score);
+
+  let candidates: Article[];
+  if (fresh.length >= count) {
+    // Enough fresh today: shuffle within today's top-N×3 by score.
+    candidates = fresh.slice(0, Math.min(count * 3, fresh.length));
+  } else {
+    // Not enough fresh today: pad with highest-scored older unread.
+    const topUp = older.slice(0, count - fresh.length);
+    candidates = [...fresh, ...topUp];
+  }
 
   // Deterministic shuffle using date as seed
-  const seed = dateStr || new Date().toISOString().split("T")[0]; // "2026-03-08"
   const random = seededRandom(seed);
 
   for (let i = candidates.length - 1; i > 0; i--) {
