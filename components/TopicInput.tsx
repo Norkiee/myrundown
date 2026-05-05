@@ -197,7 +197,7 @@ export function TopicInput({ topics, onChange, placeholder }: TopicInputProps) {
 
       {showDropdown && (
         <ul
-          className="absolute z-10 left-0 right-0 mt-1 bg-surface border border-border rounded-lg shadow-lg overflow-hidden"
+          className="absolute top-full left-0 right-0 mt-1 z-20 bg-surface border border-border rounded-lg shadow-lg overflow-hidden"
           role="listbox"
         >
           {suggestions.map((entry) => (

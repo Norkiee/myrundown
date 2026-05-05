@@ -17,6 +17,7 @@ export default function ReadsPage() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [todayLoading, setTodayLoading] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   const loadProfile = useCallback(async () => {
     try {
@@ -156,16 +157,21 @@ export default function ReadsPage() {
     <div className="pb-20 animate-fade-in">
       <Header
         profile={profile}
+        showSettings={showSettings}
+        onToggleSettings={() => setShowSettings((prev) => !prev)}
+        onCloseSettings={() => setShowSettings(false)}
         onProfileUpdate={setProfile}
       />
 
-      <TabNav
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        counts={counts}
-      />
+      {!showSettings && (
+        <TabNav
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          counts={counts}
+        />
+      )}
 
-      {activeTab === "today" ? (
+      {!showSettings && (activeTab === "today" ? (
         <div>
           {todayLoading ? (
             <ArticleCardSkeleton />
@@ -251,7 +257,7 @@ export default function ReadsPage() {
             </div>
           )}
         </div>
-      )}
+      ))}
 
     </div>
   );
