@@ -21,8 +21,12 @@ function getDomain(url: string): string {
 function formatDate(dateStr: string): string {
   const date = new Date(dateStr);
   const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  const dateDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const diffDays = Math.round(
+    (today.getTime() - dateDay.getTime()) / (1000 * 60 * 60 * 24)
+  );
 
   if (diffDays === 0) return "Today";
   if (diffDays === 1) return "Yesterday";
@@ -69,59 +73,56 @@ export function ArticleRow({ article, onToggleRead, onDelete, index = 0 }: Artic
         >
           {article.title}
         </a>
-        <span className="text-xs text-text-muted">{getDomain(article.url)}</span>
+        <span className="text-xs text-text-muted">
+          {getDomain(article.url)} · {formatDate(article.saved_at)}
+        </span>
       </div>
 
-      {/* Date or actions */}
-      <div className="flex items-center gap-1 shrink-0">
-        <div className={`flex items-center gap-1 transition-all duration-200 md:opacity-0 md:translate-x-2 md:pointer-events-none ${
+      {/* Actions */}
+      <div
+        className={`flex items-center gap-1 shrink-0 transition-all duration-200 md:opacity-0 md:translate-x-2 md:pointer-events-none ${
           hovering ? "md:opacity-100 md:translate-x-0 md:pointer-events-auto" : ""
-        }`}>
-          <button
-            onClick={() => onToggleRead(article.id, !article.read)}
-            className={`p-1.5 rounded transition-all duration-200 btn-press ${
-              article.read
-                ? "text-accent-green hover:bg-accent-green-bg"
-                : "text-text-muted hover:bg-border hover:text-accent-green"
-            }`}
-            title={article.read ? "Mark unread" : "Mark read"}
+        }`}
+      >
+        <button
+          onClick={() => onToggleRead(article.id, !article.read)}
+          className={`p-1.5 rounded transition-all duration-200 btn-press ${
+            article.read
+              ? "text-accent-green hover:bg-accent-green-bg"
+              : "text-text-muted hover:bg-border hover:text-accent-green"
+          }`}
+          title={article.read ? "Mark unread" : "Mark read"}
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            className="transition-transform duration-200 hover:scale-110"
           >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              className="transition-transform duration-200 hover:scale-110"
-            >
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-          </button>
-          <button
-            onClick={handleDelete}
-            className="p-1.5 rounded text-text-muted hover:bg-accent-red-bg hover:text-accent-red transition-all duration-200 btn-press"
-            title="Remove"
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        </button>
+        <button
+          onClick={handleDelete}
+          className="p-1.5 rounded text-text-muted hover:bg-accent-red-bg hover:text-accent-red transition-all duration-200 btn-press"
+          title="Remove"
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            className="transition-transform duration-200 hover:scale-110"
           >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              className="transition-transform duration-200 hover:scale-110"
-            >
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
-        </div>
-        <span className={`text-xs text-text-muted min-w-[60px] text-right transition-all duration-200 hidden md:block ${
-          hovering ? "md:opacity-0 md:-translate-x-2" : "md:opacity-100 md:translate-x-0"
-        }`}>
-          {formatDate(article.saved_at)}
-        </span>
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
       </div>
     </div>
   );
