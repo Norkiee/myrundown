@@ -79,23 +79,20 @@ export function ArticleRow({ article, onToggleRead, onDelete, index = 0 }: Artic
       </div>
 
       {/* Actions */}
-      <div
-        className={`flex items-center gap-1 shrink-0 transition-all duration-200 md:opacity-0 md:translate-x-2 md:pointer-events-none ${
-          hovering ? "md:opacity-100 md:translate-x-0 md:pointer-events-auto" : ""
-        }`}
-      >
+      <div className="flex items-center gap-1 shrink-0">
         <button
           onClick={() => onToggleRead(article.id, !article.read)}
-          className={`p-1.5 rounded transition-all duration-200 btn-press ${
+          className={`p-2.5 rounded transition-all duration-200 btn-press ${
             article.read
               ? "text-accent-green hover:bg-accent-green-bg"
               : "text-text-muted hover:bg-border hover:text-accent-green"
           }`}
           title={article.read ? "Mark unread" : "Mark read"}
+          aria-label={article.read ? "Mark unread" : "Mark read"}
         >
           <svg
-            width="16"
-            height="16"
+            width="18"
+            height="18"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -107,12 +104,13 @@ export function ArticleRow({ article, onToggleRead, onDelete, index = 0 }: Artic
         </button>
         <button
           onClick={handleDelete}
-          className="p-1.5 rounded text-text-muted hover:bg-accent-red-bg hover:text-accent-red transition-all duration-200 btn-press"
+          className="p-2.5 rounded text-text-muted hover:bg-accent-red-bg hover:text-accent-red transition-all duration-200 btn-press"
           title="Remove"
+          aria-label="Remove"
         >
           <svg
-            width="16"
-            height="16"
+            width="18"
+            height="18"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
