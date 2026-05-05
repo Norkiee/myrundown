@@ -52,7 +52,7 @@ const text = response.content
 let topics;
 try {
   topics = JSON.parse(text);
-} catch (err) {
+} catch {
   console.error("Failed to parse JSON from Claude:");
   console.error(text);
   process.exit(1);

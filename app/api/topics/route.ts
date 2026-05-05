@@ -47,7 +47,7 @@ export async function POST(request: Request) {
   }
 
   const raw = typeof body.topic === "string" ? body.topic : "";
-  const display = raw.trim();
+  const display = raw.trim().replace(/\s+/g, " ");
   const normalized = normalizeTopic(raw);
 
   if (!normalized) {
