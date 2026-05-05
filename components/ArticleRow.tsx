@@ -40,10 +40,13 @@ export function ArticleRow({ article, onToggleRead, onDelete, index = 0 }: Artic
   const [hovering, setHovering] = useState(false);
   const [pressed, setPressed] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
+  const [iconError, setIconError] = useState(false);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const rowRef = useRef<HTMLDivElement>(null);
 
-  const initial = (article.source || getDomain(article.url))[0].toUpperCase();
+  const domain = getDomain(article.url);
+  const initial = (article.source || domain)[0].toUpperCase();
+  const faviconUrl = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64`;
   const showActions = hovering || pressed;
 
   const cancelLongPress = () => {
@@ -110,11 +113,25 @@ export function ArticleRow({ article, onToggleRead, onDelete, index = 0 }: Artic
         if (pressed) e.preventDefault();
       }}
     >
-      {/* Favicon initial */}
-      <div className={`w-8 h-8 rounded-full bg-surface border border-border flex items-center justify-center text-sm font-medium text-text-muted shrink-0 transition-all duration-200 ${
-        hovering ? "border-border-hover scale-105" : ""
-      }`}>
-        {initial}
+      {/* Favicon squircle */}
+      <div
+        className={`w-8 h-8 rounded-lg border border-border flex items-center justify-center overflow-hidden shrink-0 transition-all duration-200 ${
+          iconError ? "bg-surface text-sm font-medium text-text-muted" : "bg-white"
+        } ${hovering ? "border-border-hover scale-105" : ""}`}
+      >
+        {iconError ? (
+          <span>{initial}</span>
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={faviconUrl}
+            alt=""
+            width={20}
+            height={20}
+            className="w-5 h-5 object-contain"
+            onError={() => setIconError(true)}
+          />
+        )}
       </div>
 
       {/* Title and domain */}
