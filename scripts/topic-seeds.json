@@ -1,0 +1,646 @@
+[
+  {
+    "normalized": "ai alignment and safety",
+    "display": "AI alignment and safety"
+  },
+  {
+    "normalized": "large language model scaling laws",
+    "display": "Large language model scaling laws"
+  },
+  {
+    "normalized": "retrieval-augmented generation",
+    "display": "Retrieval-augmented generation"
+  },
+  {
+    "normalized": "transformer architecture advances",
+    "display": "Transformer architecture advances"
+  },
+  {
+    "normalized": "constitutional ai methods",
+    "display": "Constitutional AI methods"
+  },
+  {
+    "normalized": "multimodal ai systems",
+    "display": "Multimodal AI systems"
+  },
+  {
+    "normalized": "ai interpretability research",
+    "display": "AI interpretability research"
+  },
+  {
+    "normalized": "neural network pruning",
+    "display": "Neural network pruning"
+  },
+  {
+    "normalized": "prompt engineering techniques",
+    "display": "Prompt engineering techniques"
+  },
+  {
+    "normalized": "ai-generated code quality",
+    "display": "AI-generated code quality"
+  },
+  {
+    "normalized": "machine learning in healthcare",
+    "display": "Machine learning in healthcare"
+  },
+  {
+    "normalized": "computer vision applications",
+    "display": "Computer vision applications"
+  },
+  {
+    "normalized": "ai bias and fairness",
+    "display": "AI bias and fairness"
+  },
+  {
+    "normalized": "diffusion models for generation",
+    "display": "Diffusion models for generation"
+  },
+  {
+    "normalized": "graph neural networks",
+    "display": "Graph neural networks"
+  },
+  {
+    "normalized": "reinforcement learning breakthroughs",
+    "display": "Reinforcement learning breakthroughs"
+  },
+  {
+    "normalized": "zero-shot learning capabilities",
+    "display": "Zero-shot learning capabilities"
+  },
+  {
+    "normalized": "fine-tuning language models",
+    "display": "Fine-tuning language models"
+  },
+  {
+    "normalized": "ai for drug discovery",
+    "display": "AI for drug discovery"
+  },
+  {
+    "normalized": "neural architecture search",
+    "display": "Neural architecture search"
+  },
+  {
+    "normalized": "microservices architecture patterns",
+    "display": "Microservices architecture patterns"
+  },
+  {
+    "normalized": "container orchestration with kubernetes",
+    "display": "Container orchestration with Kubernetes"
+  },
+  {
+    "normalized": "database performance optimization",
+    "display": "Database performance optimization"
+  },
+  {
+    "normalized": "api design best practices",
+    "display": "API design best practices"
+  },
+  {
+    "normalized": "software testing strategies",
+    "display": "Software testing strategies"
+  },
+  {
+    "normalized": "code review effectiveness",
+    "display": "Code review effectiveness"
+  },
+  {
+    "normalized": "devops automation tools",
+    "display": "DevOps automation tools"
+  },
+  {
+    "normalized": "system design interviews",
+    "display": "System design interviews"
+  },
+  {
+    "normalized": "distributed systems consensus",
+    "display": "Distributed systems consensus"
+  },
+  {
+    "normalized": "memory management in programming",
+    "display": "Memory management in programming"
+  },
+  {
+    "normalized": "concurrent programming patterns",
+    "display": "Concurrent programming patterns"
+  },
+  {
+    "normalized": "error handling strategies",
+    "display": "Error handling strategies"
+  },
+  {
+    "normalized": "documentation for developers",
+    "display": "Documentation for developers"
+  },
+  {
+    "normalized": "technical debt reduction",
+    "display": "Technical debt reduction"
+  },
+  {
+    "normalized": "refactoring legacy code",
+    "display": "Refactoring legacy code"
+  },
+  {
+    "normalized": "open source contribution",
+    "display": "Open source contribution"
+  },
+  {
+    "normalized": "software performance profiling",
+    "display": "Software performance profiling"
+  },
+  {
+    "normalized": "security vulnerability patching",
+    "display": "Security vulnerability patching"
+  },
+  {
+    "normalized": "type systems and safety",
+    "display": "Type systems and safety"
+  },
+  {
+    "normalized": "functional programming paradigms",
+    "display": "Functional programming paradigms"
+  },
+  {
+    "normalized": "indie hacker growth strategies",
+    "display": "Indie hacker growth strategies"
+  },
+  {
+    "normalized": "building saas products",
+    "display": "Building SaaS products"
+  },
+  {
+    "normalized": "solo founder challenges",
+    "display": "Solo founder challenges"
+  },
+  {
+    "normalized": "bootstrapping without venture capital",
+    "display": "Bootstrapping without venture capital"
+  },
+  {
+    "normalized": "indie game development",
+    "display": "Indie game development"
+  },
+  {
+    "normalized": "niche market validation",
+    "display": "Niche market validation"
+  },
+  {
+    "normalized": "customer acquisition costs",
+    "display": "Customer acquisition costs"
+  },
+  {
+    "normalized": "subscription model design",
+    "display": "Subscription model design"
+  },
+  {
+    "normalized": "indie developer communities",
+    "display": "Indie developer communities"
+  },
+  {
+    "normalized": "lifestyle business building",
+    "display": "Lifestyle business building"
+  },
+  {
+    "normalized": "product-market fit discovery",
+    "display": "Product-market fit discovery"
+  },
+  {
+    "normalized": "user feedback collection",
+    "display": "User feedback collection"
+  },
+  {
+    "normalized": "mvp scope definition",
+    "display": "MVP scope definition"
+  },
+  {
+    "normalized": "feature prioritization frameworks",
+    "display": "Feature prioritization frameworks"
+  },
+  {
+    "normalized": "conversion rate optimization",
+    "display": "Conversion rate optimization"
+  },
+  {
+    "normalized": "landing page design",
+    "display": "Landing page design"
+  },
+  {
+    "normalized": "user onboarding flows",
+    "display": "User onboarding flows"
+  },
+  {
+    "normalized": "mobile app ux patterns",
+    "display": "Mobile app UX patterns"
+  },
+  {
+    "normalized": "accessibility standards",
+    "display": "Accessibility standards"
+  },
+  {
+    "normalized": "dark mode implementation",
+    "display": "Dark mode implementation"
+  },
+  {
+    "normalized": "typography in design",
+    "display": "Typography in design"
+  },
+  {
+    "normalized": "color theory and palettes",
+    "display": "Color theory and palettes"
+  },
+  {
+    "normalized": "wireframing tools",
+    "display": "Wireframing tools"
+  },
+  {
+    "normalized": "usability testing methods",
+    "display": "Usability testing methods"
+  },
+  {
+    "normalized": "design thinking process",
+    "display": "Design thinking process"
+  },
+  {
+    "normalized": "button design principles",
+    "display": "Button design principles"
+  },
+  {
+    "normalized": "information architecture",
+    "display": "Information architecture"
+  },
+  {
+    "normalized": "user research techniques",
+    "display": "User research techniques"
+  },
+  {
+    "normalized": "venture capital fundraising",
+    "display": "Venture capital fundraising"
+  },
+  {
+    "normalized": "series a financing",
+    "display": "Series A financing"
+  },
+  {
+    "normalized": "pitch deck structure",
+    "display": "Pitch deck structure"
+  },
+  {
+    "normalized": "startup valuation methods",
+    "display": "Startup valuation methods"
+  },
+  {
+    "normalized": "angel investor networks",
+    "display": "Angel investor networks"
+  },
+  {
+    "normalized": "term sheet negotiations",
+    "display": "Term sheet negotiations"
+  },
+  {
+    "normalized": "equity compensation",
+    "display": "Equity compensation"
+  },
+  {
+    "normalized": "due diligence process",
+    "display": "Due diligence process"
+  },
+  {
+    "normalized": "burn rate management",
+    "display": "Burn rate management"
+  },
+  {
+    "normalized": "runway calculation",
+    "display": "Runway calculation"
+  },
+  {
+    "normalized": "fundraising pitfalls",
+    "display": "Fundraising pitfalls"
+  },
+  {
+    "normalized": "inflation impact on economy",
+    "display": "Inflation impact on economy"
+  },
+  {
+    "normalized": "central bank policy effects",
+    "display": "Central bank policy effects"
+  },
+  {
+    "normalized": "cryptocurrency regulation",
+    "display": "Cryptocurrency regulation"
+  },
+  {
+    "normalized": "stock market dynamics",
+    "display": "Stock market dynamics"
+  },
+  {
+    "normalized": "real estate market trends",
+    "display": "Real estate market trends"
+  },
+  {
+    "normalized": "employment rate changes",
+    "display": "Employment rate changes"
+  },
+  {
+    "normalized": "consumer spending patterns",
+    "display": "Consumer spending patterns"
+  },
+  {
+    "normalized": "global trade agreements",
+    "display": "Global trade agreements"
+  },
+  {
+    "normalized": "currency exchange rates",
+    "display": "Currency exchange rates"
+  },
+  {
+    "normalized": "economic recession indicators",
+    "display": "Economic recession indicators"
+  },
+  {
+    "normalized": "carbon capture technology",
+    "display": "Carbon capture technology"
+  },
+  {
+    "normalized": "renewable energy adoption",
+    "display": "Renewable energy adoption"
+  },
+  {
+    "normalized": "electric vehicle market",
+    "display": "Electric vehicle market"
+  },
+  {
+    "normalized": "climate change impacts",
+    "display": "Climate change impacts"
+  },
+  {
+    "normalized": "sustainable agriculture",
+    "display": "Sustainable agriculture"
+  },
+  {
+    "normalized": "ocean acidification",
+    "display": "Ocean acidification"
+  },
+  {
+    "normalized": "forest conservation efforts",
+    "display": "Forest conservation efforts"
+  },
+  {
+    "normalized": "clean water initiatives",
+    "display": "Clean water initiatives"
+  },
+  {
+    "normalized": "plastic pollution solutions",
+    "display": "Plastic pollution solutions"
+  },
+  {
+    "normalized": "green energy grid",
+    "display": "Green energy grid"
+  },
+  {
+    "normalized": "crispr gene editing",
+    "display": "CRISPR gene editing"
+  },
+  {
+    "normalized": "quantum computing progress",
+    "display": "Quantum computing progress"
+  },
+  {
+    "normalized": "fusion energy research",
+    "display": "Fusion energy research"
+  },
+  {
+    "normalized": "brain-computer interfaces",
+    "display": "Brain-computer interfaces"
+  },
+  {
+    "normalized": "vaccine development",
+    "display": "Vaccine development"
+  },
+  {
+    "normalized": "antibiotic resistance",
+    "display": "Antibiotic resistance"
+  },
+  {
+    "normalized": "microbiome research",
+    "display": "Microbiome research"
+  },
+  {
+    "normalized": "dark matter discoveries",
+    "display": "Dark matter discoveries"
+  },
+  {
+    "normalized": "exoplanet findings",
+    "display": "Exoplanet findings"
+  },
+  {
+    "normalized": "climate modeling advances",
+    "display": "Climate modeling advances"
+  },
+  {
+    "normalized": "artificial photosynthesis",
+    "display": "Artificial photosynthesis"
+  },
+  {
+    "normalized": "nanotechnology applications",
+    "display": "Nanotechnology applications"
+  },
+  {
+    "normalized": "us-china relations",
+    "display": "US-China relations"
+  },
+  {
+    "normalized": "russia geopolitical strategy",
+    "display": "Russia geopolitical strategy"
+  },
+  {
+    "normalized": "middle east conflicts",
+    "display": "Middle East conflicts"
+  },
+  {
+    "normalized": "european security alliance",
+    "display": "European security alliance"
+  },
+  {
+    "normalized": "taiwan independence debate",
+    "display": "Taiwan independence debate"
+  },
+  {
+    "normalized": "north korea weapons",
+    "display": "North Korea weapons"
+  },
+  {
+    "normalized": "india-pakistan tensions",
+    "display": "India-Pakistan tensions"
+  },
+  {
+    "normalized": "african political stability",
+    "display": "African political stability"
+  },
+  {
+    "normalized": "brexit economic impact",
+    "display": "Brexit economic impact"
+  },
+  {
+    "normalized": "un climate negotiations",
+    "display": "UN climate negotiations"
+  },
+  {
+    "normalized": "minimalist design movement",
+    "display": "Minimalist design movement"
+  },
+  {
+    "normalized": "brutalist architecture",
+    "display": "Brutalist architecture"
+  },
+  {
+    "normalized": "sustainable fashion",
+    "display": "Sustainable fashion"
+  },
+  {
+    "normalized": "interior design trends",
+    "display": "Interior design trends"
+  },
+  {
+    "normalized": "logo design principles",
+    "display": "Logo design principles"
+  },
+  {
+    "normalized": "graphic design tools",
+    "display": "Graphic design tools"
+  },
+  {
+    "normalized": "photography composition",
+    "display": "Photography composition"
+  },
+  {
+    "normalized": "video production workflow",
+    "display": "Video production workflow"
+  },
+  {
+    "normalized": "animation techniques",
+    "display": "Animation techniques"
+  },
+  {
+    "normalized": "user interface design",
+    "display": "User interface design"
+  },
+  {
+    "normalized": "stoicism and modern life",
+    "display": "Stoicism and modern life"
+  },
+  {
+    "normalized": "existentialism philosophy",
+    "display": "Existentialism philosophy"
+  },
+  {
+    "normalized": "ethics in ai development",
+    "display": "Ethics in AI development"
+  },
+  {
+    "normalized": "free will vs determinism",
+    "display": "Free will vs determinism"
+  },
+  {
+    "normalized": "consciousness studies",
+    "display": "Consciousness studies"
+  },
+  {
+    "normalized": "moral relativism debate",
+    "display": "Moral relativism debate"
+  },
+  {
+    "normalized": "artificial intelligence ethics",
+    "display": "Artificial intelligence ethics"
+  },
+  {
+    "normalized": "philosophy of mind",
+    "display": "Philosophy of mind"
+  },
+  {
+    "normalized": "epistemology fundamentals",
+    "display": "Epistemology fundamentals"
+  },
+  {
+    "normalized": "metaphysics concepts",
+    "display": "Metaphysics concepts"
+  },
+  {
+    "normalized": "nfl playoff strategies",
+    "display": "NFL playoff strategies"
+  },
+  {
+    "normalized": "basketball analytics",
+    "display": "Basketball analytics"
+  },
+  {
+    "normalized": "soccer player transfer market",
+    "display": "Soccer player transfer market"
+  },
+  {
+    "normalized": "tennis serve mechanics",
+    "display": "Tennis serve mechanics"
+  },
+  {
+    "normalized": "running training optimization",
+    "display": "Running training optimization"
+  },
+  {
+    "normalized": "cricket strategy analysis",
+    "display": "Cricket strategy analysis"
+  },
+  {
+    "normalized": "boxing technique",
+    "display": "Boxing technique"
+  },
+  {
+    "normalized": "cycling performance",
+    "display": "Cycling performance"
+  },
+  {
+    "normalized": "swimming technique improvement",
+    "display": "Swimming technique improvement"
+  },
+  {
+    "normalized": "golf swing physics",
+    "display": "Golf swing physics"
+  },
+  {
+    "normalized": "sourdough bread baking",
+    "display": "Sourdough bread baking"
+  },
+  {
+    "normalized": "michelin star restaurants",
+    "display": "Michelin star restaurants"
+  },
+  {
+    "normalized": "fermentation techniques",
+    "display": "Fermentation techniques"
+  },
+  {
+    "normalized": "coffee roasting methods",
+    "display": "Coffee roasting methods"
+  },
+  {
+    "normalized": "pasta making traditions",
+    "display": "Pasta making traditions"
+  },
+  {
+    "normalized": "vegan protein sources",
+    "display": "Vegan protein sources"
+  },
+  {
+    "normalized": "molecular gastronomy",
+    "display": "Molecular gastronomy"
+  },
+  {
+    "normalized": "food preservation",
+    "display": "Food preservation"
+  },
+  {
+    "normalized": "wine tasting notes",
+    "display": "Wine tasting notes"
+  },
+  {
+    "normalized": "chocolate production",
+    "display": "Chocolate production"
+  }
+]
